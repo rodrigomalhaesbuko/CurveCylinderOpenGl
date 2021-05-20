@@ -7,9 +7,9 @@
 #include <iterator>
 #include <iostream>
 #include <algorithm>
-#include <math.h>
+#include<math.h>
 #include <Eigen/Dense>
-#include <QStyle>
+ #include <QStyle>
 
 using namespace Eigen;
 
@@ -57,7 +57,41 @@ std::vector<glm::vec3> PolygonalMoulder::createShape(std::vector<glm::vec3> poly
     glm::vec3 u0 = glm::cross(v0,t0);
 
     u.push_back(u0);
+//    u.push_back(u0);
+//    u.push_back(u0);
+//    u.push_back(u0);
+//    u.push_back(u0);
+//    u.push_back(u0);
+//    u.push_back(u0);
+//    u.push_back(u0);
+//    u.push_back(u0);
+//    u.push_back(u0);
+//    u.push_back(u0);
+//    u.push_back(u0);
+//    u.push_back(u0);
+//    u.push_back(u0);
+//    u.push_back(u0);
+//    u.push_back(u0);
+//    u.push_back(u0);
+
     v.push_back(v0);
+//    v.push_back(glm::vec3( 0,    -1.   ,  0.015));
+//    v.push_back(glm::vec3( 0,    -1.   ,  0.005));
+//    v.push_back(glm::vec3( 0,    -1.   , -0.015));
+//    v.push_back(glm::vec3( 0,    -0.999, -0.054));
+//    v.push_back(glm::vec3( 0,    -0.991, -0.13 ));
+//    v.push_back(glm::vec3( 0,    -0.967, -0.255));
+//    v.push_back(glm::vec3( 0,    -0.914, -0.406));
+//    v.push_back(glm::vec3( 0,    -0.849, -0.528));
+//    v.push_back(glm::vec3( 0,    -0.79 , -0.613));
+//    v.push_back(glm::vec3( 0,    -0.718, -0.696));
+//    v.push_back(glm::vec3( 0,    -0.624, -0.781));
+//    v.push_back(glm::vec3( 0,    -0.489, -0.872));
+//    v.push_back(glm::vec3( 0,    -0.337, -0.942));
+//    v.push_back(glm::vec3( 0,    -0.22 , -0.975));
+//    v.push_back(glm::vec3( 0,    -0.15 , -0.989));
+//    v.push_back(glm::vec3( 0,    -0.126, -0.992));
+
 
 
     /*u_ = np.array([1,0,0])
@@ -65,8 +99,8 @@ std::vector<glm::vec3> PolygonalMoulder::createShape(std::vector<glm::vec3> poly
     v0 = unitario(np.cross(t0, u_))
     u0 = np.cross(v0,t0)*/
 
-    // Apenas com o vetor tangente descobrir os eixos u e v proximos
-    for(int i = 1; i < tan.size(); i++){
+     //Apenas com o vetor tangente descobrir os eixos u e v proximos
+    for(int i = 1; i < (int)tan.size(); i++){
         glm::vec3 vi;
         glm::vec3 ui;
         rotaciona(u[i-1], v[i-1], tan[i-1], tan[i], &ui, &vi);
@@ -83,7 +117,7 @@ std::vector<glm::vec3> PolygonalMoulder::createShape(std::vector<glm::vec3> poly
     vertices = createVertices(pos, u, v, tan, radiusCircle, numberOfPointsInCircle);
 
     // realiza o mapeamento para a malha de triangulos
-    *tri = createTriangles(numberOfPointsInCircle, vertices.size());
+    *tri = createTriangles(numberOfPointsInCircle, tan.size());
 
     std::cout << "Vector" << std::endl;
     printVector3(vertices);
@@ -232,9 +266,9 @@ std::vector<glm::vec3> PolygonalMoulder::bezierInterpolation(std::vector<glm::ve
 
 void PolygonalMoulder::rotaciona(glm::vec3 u0, glm::vec3 v0, glm::vec3 t0, glm::vec3 t1, glm::vec3 *u1, glm::vec3 *v1){
     glm::vec3 eixo = glm::cross(t0,t1);
-    if(glm::length(eixo) >= 0.000001){
+    if(glm::length(eixo) >= 0.000000001){
         eixo = glm::normalize(eixo);
-        float angle = glm::acos(glm::dot(t0,t1));
+        float angle = glm::acos(t0[0]*t1[0]+t0[1]*t1[1]+t0[2]*t1[2]);
         //rotacionar o quartenio entorno do eixo
         glm::quat quat_rot =  glm::quat(glm::cos(angle/2), glm::sin(angle/2)*eixo);
         glm::quat quat_u0 = glm::quat(0.0f, u0);
@@ -390,12 +424,12 @@ std::vector<glm::vec3> PolygonalMoulder::createVertices(std::vector<glm::vec3>  
 
 std::vector<glm::vec3> PolygonalMoulder::createTriangles(int pointsInCircle, int numberOfCircles){
    std::vector<glm::vec3> tri;
-   for(int j = 0; j< numberOfCircles; j++){
+   for(int j = 0; j< numberOfCircles-1; j++){
        for(int i = 0; i< pointsInCircle; i++){
-           int k = j*pointsInCircle + i;
-           int k1 = j*pointsInCircle + (i+1)%pointsInCircle;
-           tri.push_back(glm::vec3(k,k1,k1+pointsInCircle));
-           tri.push_back(glm::vec3(k,k1+pointsInCircle,k+pointsInCircle));
+           int k = j*10 + i;
+           int k1 = j*10 + (i+1)%10;
+           tri.push_back(glm::vec3(k,k1,k1+10));
+           tri.push_back(glm::vec3(k,k1+10,k+10));
        }
    }
     /*

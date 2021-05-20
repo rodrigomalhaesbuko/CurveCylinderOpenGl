@@ -89,7 +89,7 @@ void RenderWidget::initializeGL()
     //Definir matriz view e projection
     float ratio = static_cast<float>(width())/height();
     view = glm::lookAt(eye, center, up);
-    proj = glm::perspective<float>(glm::radians(45.0f), ratio, 0.1, 100.0f);
+    proj = glm::perspective<float>(glm::radians(45.0f), ratio, 0.1, 1000.0f);
 
 
     // QUAD DE PEDRAS OU BOLA DE GOLFE
