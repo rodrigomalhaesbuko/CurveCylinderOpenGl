@@ -7,9 +7,9 @@
 #include <iterator>
 #include <iostream>
 #include <algorithm>
-#include<math.h>
-#include <Eigen/Dense>>
- #include <QStyle>
+#include <math.h>
+#include <Eigen/Dense>
+#include <QStyle>
 
 using namespace Eigen;
 

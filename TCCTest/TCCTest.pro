@@ -14,9 +14,6 @@ DEFINES += QT_DEPRECATED_WARNINGS
 FORMS += \
     mainwindow.ui
 
-INCLUDEPATH += \
-    eigen-master/
-
 HEADERS += \
     mainwindow.h \
     polygonalmoulder.h \
@@ -27,6 +24,9 @@ SOURCES += \
     mainwindow.cpp \
     main.cpp \
     renderwidget.cpp
+
+INCLUDEPATH += $$PWD/eigen/
+DEPENDPATH  += $$PWD/eigen/
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
