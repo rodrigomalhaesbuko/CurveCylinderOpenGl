@@ -2,7 +2,7 @@ QT       += core gui opengl
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = CG-ModernOpenGL
+TARGET = TCCTest.pro
 TEMPLATE = app
 
 # The following define makes your compiler emit warnings if you use
@@ -32,3 +32,6 @@ DEPENDPATH  += $$PWD/eigen/
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+RESOURCES += \
+    QtResources.qrc

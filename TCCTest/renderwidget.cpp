@@ -73,11 +73,12 @@ void RenderWidget::initializeGL()
     glViewport(0,0, width(), height());
 
     //Compilar os shaders
-    program.addShaderFromSourceFile(QOpenGLShader::Vertex, "/Users/rodrigobukowitz/Desktop/CompGraf/CG2020ARCBALL/src/vertexshader.glsl");
-    program.addShaderFromSourceFile(QOpenGLShader::Fragment, "/Users/rodrigobukowitz/Desktop/CompGraf/CG2020ARCBALL/src/fragmentshader.glsl");
+    program.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/vertex");
+    program.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/fragment");
+    program.addShaderFromSourceFile(QOpenGLShader::Geometry, ":/Shaders/geometry");
     program.link();
 
-    glm::vec3 eye(0,0,5);
+    glm::vec3 eye(0,0,100);
     glm::vec3 center(0,0,0);
     glm::vec3 up(0,1,0);
 
@@ -147,7 +148,7 @@ void RenderWidget::paintGL()
     program.setUniformValue("mvp", mvp);
 
     //Desenhar
-    glDrawElements(GL_TRIANGLES, static_cast<int>(indices.size()), GL_UNSIGNED_INT, nullptr);
+    glDrawArrays(GL_LINES_ADJACENCY_EXT, 0, vertices.size());
 
 }
 
@@ -437,6 +438,18 @@ void RenderWidget::createPoly()
         indices.push_back(t.y);
         indices.push_back(t.z);
     }
+
+
+    std::vector<glm::vec3> new_vertices;
+    for(unsigned int i = 0; i < vertices.size() - 3; ++i)
+    {
+        new_vertices.push_back(vertices[i+0]);
+        new_vertices.push_back(vertices[i+1]);
+        new_vertices.push_back(vertices[i+2]);
+        new_vertices.push_back(vertices[i+3]);
+    }
+
+    vertices = new_vertices;
 
     normals = std::vector<glm::vec3>(vertices.size());
     texCoords =  std::vector<glm::vec2>(vertices.size());

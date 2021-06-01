@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/Shaders">
+        <file alias="fragment">Shaders/fragmentshader.glsl</file>
+        <file alias="geometry">Shaders/geometryshader.glsl</file>
+        <file alias="vertex">Shaders/vertexshader.glsl</file>
+    </qresource>
+</RCC>
