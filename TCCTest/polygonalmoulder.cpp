@@ -125,6 +125,7 @@ std::vector<glm::vec3> PolygonalMoulder::createShape(std::vector<glm::vec3> poly
     std::cout << "Triangulo" << std::endl;
     printVector3(*tri);
 
+    //return polyInterpolated;
     return pos;
 
 }

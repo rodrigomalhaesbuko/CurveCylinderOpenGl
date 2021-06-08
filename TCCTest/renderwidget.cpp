@@ -76,21 +76,10 @@ void RenderWidget::initializeGL()
     program.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/vertex");
     program.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/fragment");
     program.addShaderFromSourceFile(QOpenGLShader::Geometry, ":/Shaders/geometry");
+    //program.addShaderFromSourceFile(QOpenGLShader::TessellationEvaluation, ":/Shaders/TEShader.glsl");
+    //program.addShaderFromSourceFile(QOpenGLShader::TessellationControl, ":/Shaders/TCShader.glsl");
+
     program.link();
-
-    glm::vec3 eye(0,0,100);
-    glm::vec3 center(0,0,0);
-    glm::vec3 up(0,1,0);
-
-    eyeBall = eye;
-    centerBall = center;
-    upBall = up;
-
-
-    //Definir matriz view e projection
-    float ratio = static_cast<float>(width())/height();
-    view = glm::lookAt(eye, center, up);
-    proj = glm::perspective<float>(glm::radians(45.0f), ratio, 0.1, 1000.0f);
 
 
     // QUAD DE PEDRAS OU BOLA DE GOLFE
@@ -99,6 +88,26 @@ void RenderWidget::initializeGL()
 
     //Criar VBO e VAO
     createVBO();
+
+    glm::vec3 eye(0,0,100);
+    glm::vec3 verticesMedia;
+    for (int i=0;i< vertices.size() ; i++ ) {
+        verticesMedia+=vertices[i];
+    }
+
+    verticesMedia = verticesMedia/vertices.size();
+    glm::vec3 centerM = verticesMedia;
+    glm::vec3 up(0,1,0);
+
+    eyeBall = eye;
+    centerBall = centerM;
+    upBall = up;
+
+
+    //Definir matriz view e projection
+    float ratio = static_cast<float>(width())/height();
+    view = glm::lookAt(eye, centerM, up);
+    proj = glm::perspective<float>(glm::radians(45.0f), ratio, 0.1, 1000.0f);
 }
 
 
@@ -122,8 +131,6 @@ void RenderWidget::paintGL()
     QMatrix4x4 v(glm::value_ptr(glm::transpose(view)));
     QMatrix4x4 p(glm::value_ptr(glm::transpose(proj)));
     program.setUniformValue("viewer", QVector3D(eyeBall.x, eyeBall.y, eyeBall.z));
-    //Passar as uniformes da luz e do material
-    //BOLA
 
     program.setUniformValue("light.position", QVector3D(0,0,5) );
     program.setUniformValue("material.ambient", QVector3D(0.2f,0.2f,0.2f));
@@ -133,13 +140,12 @@ void RenderWidget::paintGL()
 
 
     //Ativar e linkar a textura
-
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, textureID);
     program.setUniformValue("sampler", 0);
 
     QMatrix4x4 sphereModel;
-    sphereModel.translate(0,0,0);
+    sphereModel.translate(-centerBall.x,-centerBall.y, -centerBall.z);
     //Passar as matrizes mv e mvp
     QMatrix4x4 mv = v * m * sphereModel;
     QMatrix4x4 mvp = p * mv;
@@ -148,8 +154,10 @@ void RenderWidget::paintGL()
     program.setUniformValue("mvp", mvp);
 
     //Desenhar
-    glDrawArrays(GL_LINES_ADJACENCY_EXT, 0, vertices.size());
 
+    glPatchParameteri( GL_PATCH_VERTICES, 4);
+    //glDrawArrays(GL_PATCHES, 0, vertices.size());
+    glDrawArrays(GL_LINES, 0, vertices.size());
 }
 
 
@@ -186,238 +194,6 @@ void RenderWidget::rotate(glm::ivec2 p1, glm::ivec2 p2)
     model = rot * model;
 }
 
-
-void RenderWidget::createCube()
-{
-    //Definir vértices, normais e índices
-    vertices = {
-        { -1, -1, -1 }, { -1, -1, -1 }, { -1, -1, -1 },
-        { +1, -1, -1 }, { +1, -1, -1 }, { +1, -1, -1 },
-        { +1, -1, +1 }, { +1, -1, +1 }, { +1, -1, +1 },
-        { -1, -1, +1 }, { -1, -1, +1 }, { -1, -1, +1 },
-        { -1, +1, -1 }, { -1, +1, -1 }, { -1, +1, -1 },
-        { +1, +1, -1 }, { +1, +1, -1 }, { +1, +1, -1 },
-        { +1, +1, +1 }, { +1, +1, +1 }, { +1, +1, +1 },
-        { -1, +1, +1 }, { -1, +1, +1 }, { -1, +1, +1 }
-    };
-
-    normals = {
-        {  0, -1,  0 }, { -1,  0,  0 }, {  0,  0, -1 },
-        {  0, -1,  0 }, { +1,  0,  0 }, {  0,  0, -1 },
-        {  0, -1,  0 }, { +1,  0,  0 }, {  0,  0, +1 },
-        {  0, -1,  0 }, { -1,  0,  0 }, {  0,  0, +1 },
-        { -1,  0,  0 }, {  0,  0, -1 }, {  0, +1,  0 },
-        { +1,  0,  0 }, {  0,  0, -1 }, {  0, +1,  0 },
-        { +1,  0,  0 }, {  0,  0, +1 }, {  0, +1,  0 },
-        { -1,  0,  0 }, {  0,  0, +1 }, {  0, +1,  0 }
-    };
-
-    texCoords = {
-        {0.25, 0.50}, {0.25, 0.50}, {0.50, 0.75},
-        {0.00, 0.50}, {1.00, 0.50}, {0.75, 0.75},
-        {0.00, 0.25}, {1.00, 0.25}, {0.75, 0.00},
-        {0.25, 0.25}, {0.25, 0.25}, {0.50, 0.00},
-        {0.50, 0.50}, {0.50, 0.50}, {0.50, 0.50},
-        {0.75, 0.50}, {0.75, 0.50}, {0.75, 0.50},
-        {0.75, 0.25}, {0.75, 0.25}, {0.75, 0.25},
-        {0.50, 0.25}, {0.50, 0.25}, {0.50, 0.25}
-    };
-
-    indices = {
-        0,   3,  6, //normal: (  0, -1,  0 )
-        0,   6,  9, //normal: (  0, -1,  0 )
-        12,  1, 10, //normal: ( -1,  0,  0 )
-        12, 10, 21, //normal: ( -1,  0,  0 )
-        18,  7,  4, //normal: ( +1,  0,  0 )
-        18,  4, 15, //normal: ( +1,  0,  0 )
-        22, 11,  8, //normal: (  0,  0, +1 )
-        22,  8, 19, //normal: (  0,  0, +1 )
-        16,  5,  2, //normal: (  0,  0, -1 )
-        16,  2, 13, //normal: (  0,  0, -1 )
-        23, 20, 17, //normal: (  0, +1,  0 )
-        23, 17, 14  //normal: (  0, +1,  0 )
-    };
-}
-
-void RenderWidget::createQuad()
-{
-    //Definir vértices, normais e índices
-    vertices = {
-        { -1, -1, 0 },
-        { +1, -1, 0 },
-        { +1, +1, 0 },
-        { -1, +1, 0 },
-        { -1, -1, 0 },
-        { +1, -1, 0 }
-
-    };
-
-    normals = {
-        {  0, 0,  1 },
-        {  0, 0,  1 },
-        {  0, 0,  1 },
-        {  0, 0,  1 },
-        {  0, 0,  1 },
-        {  0, 0,  1 },
-        {  0, 0,  1 },
-    };
-
-    texCoords = {
-       {0,0},
-       {1,0},
-       {1,1},
-       {0,1},
-       {0,0},
-       {1,0}
-    };
-
-    indices = {
-        0,  1,  2, //normal: (  0, 0,  -1)
-        0,   2,  3, //normal: (  0, 0,  -1 )
-    };
-
-    // CALCULO DA TANGENTE
-
-    // positions
-    glm::vec3 pos0(-1.0,  -1.0, 0.0);
-    glm::vec3 pos1(+1.0, -1.0, 0.0);
-    glm::vec3 pos2( +1.0, +1.0, 0.0);
-    glm::vec3 pos3( -1.0,  +1.0, 0.0);
-    glm::vec3 pos4( -1.0,  -1.0, 0.0);
-    glm::vec3 pos5( +1.0,  -1.0, 0.0);
-    // texture coordinates
-    glm::vec2 uv0(0.0, 0.0);
-    glm::vec2 uv1(1.0, 0.0);
-    glm::vec2 uv2(1.0, 1.0);
-    glm::vec2 uv3(0.0, 1.0);
-    glm::vec2 uv4(0.0, 0.0);
-    glm::vec2 uv5(1.0, 0.0);
-    // normal vector
-    glm::vec3 nm(0.0, 0.0, 1.0);
-
-    glm::vec3 edge1 = pos1 - pos0;
-    glm::vec3 edge2 = pos2 - pos0;
-    glm::vec2 deltaUV1 = uv1 - uv0;
-    glm::vec2 deltaUV2 = uv2 - uv0;
-
-    float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
-
-    glm::vec3 tangent1 = glm::vec3(0,0,0);
-    tangent1.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
-    tangent1.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
-    tangent1.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
-
-    edge1 = pos2 - pos0;
-    edge2 = pos3 - pos0;
-    deltaUV1 = uv2 - uv0;
-    deltaUV2 = uv3 - uv0;
-
-    f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
-
-    glm::vec3 tangent2 = glm::vec3(0,0,0);
-    tangent2.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
-    tangent2.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
-    tangent2.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
-
-    tangentes.push_back(tangent1);
-    tangentes.push_back(tangent1);
-    tangentes.push_back(tangent1);
-    tangentes.push_back(tangent2);
-    tangentes.push_back(tangent2);
-    tangentes.push_back(tangent2);
-
-}
-
-
-void RenderWidget::createSphere()
-{
-    const int n = 100;
-    const int m = 100;
-
-    const int numTriangles = 2 * n * m;
-
-    for( unsigned int i = 0; i <= n; i++ )
-    {
-        for( unsigned int j = 0; j <= m; j++ )
-        {
-            //Atualizar as coordenadas de textura
-            double s = static_cast<double>(i) / n;
-            double t = static_cast<double>(j) / m;
-            texCoords.push_back(glm::vec2(s,t));
-
-            //Calcula os parâmetros
-            double theta = 2 * s * M_PI;
-            double phi = t * M_PI;
-            double sinTheta = sin( theta );
-            double cosTheta = cos( theta );
-            double sinPhi = sin( phi );
-            double cosPhi = cos( phi );
-
-            //Calcula os vértices == equacao da esfera
-            vertices.push_back( glm::vec3(cosTheta * sinPhi,
-                                          cosPhi,
-                                          sinTheta * sinPhi) );
-        }
-    }
-
-    normals = vertices;
-
-    for ( int i=0; i<vertices.size(); i+=3){
-
-           // Shortcuts for vertices
-           glm::vec3 v0 = vertices[i+0];
-           glm::vec3 v1 = vertices[i+1];
-           glm::vec3 v2 = vertices[i+2];
-
-           // Shortcuts for UVs
-           glm::vec2 uv0 = texCoords[i+0];
-           glm::vec2 uv1 = texCoords[i+1];
-           glm::vec2 uv2 = texCoords[i+2];
-
-           // Edges of the triangle : postion delta
-           glm::vec3 deltaPos1 = v1-v0;
-           glm::vec3 deltaPos2 = v2-v0;
-
-           // UV delta
-           glm::vec2 deltaUV1 = uv1-uv0;
-           glm::vec2 deltaUV2 = uv2-uv0;
-
-           float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
-           glm::vec3 tangent = (deltaPos1 * deltaUV2.y   - deltaPos2 * deltaUV1.y)*r;
-           glm::vec3 bitangent = (deltaPos2 * deltaUV1.x   - deltaPos1 * deltaUV2.x)*r;
-
-           // Set the same tangent for all three vertices of the triangle.
-           // They will be merged later, in vboindexer.cpp
-           tangentes.push_back(tangent);
-           tangentes.push_back(tangent);
-           tangentes.push_back(tangent);
-    }
-
-
-    indices.resize(numTriangles*3);
-
-    auto getIndex = [=]( unsigned int i, unsigned int j, unsigned int s )
-    {
-        return j + i * ( s + 1 );
-    };
-
-    //Preenche o vetor com a triangulação
-    unsigned int k = 0;
-    for( unsigned int i = 0; i < n; i++ )
-    {
-        for( unsigned int j = 0; j < m; j++ )
-        {
-            indices[ k++ ] = getIndex( i, j, n );
-            indices[ k++ ] = getIndex( i + 1, j + 1, n );
-            indices[ k++ ] = getIndex( i + 1, j, n );
-
-            indices[ k++ ] = getIndex( i, j, n );
-            indices[ k++ ] = getIndex( i, j + 1, n );
-            indices[ k++ ] = getIndex( i + 1, j + 1, n );
-        }
-    }
-}
-
 void RenderWidget::createPoly()
 {
     //TESTAR CODIGOS EM PYTHON
@@ -429,6 +205,10 @@ void RenderWidget::createPoly()
     poly.push_back(glm::vec3(0, 13, -150));
     poly.push_back(glm::vec3(0, 50, -187));
     poly.push_back(glm::vec3(0, 100, -200));
+//    poly.push_back(glm::vec3(10, 120, -180));
+//    poly.push_back(glm::vec3(20, 50, -160));
+//    poly.push_back(glm::vec3(30, 20, -200));
+//    poly.push_back(glm::vec3(40, 13, -230));
 
     std::vector<glm::vec3> tri;
     vertices = polyMoulder.createShape(poly, &tri);
@@ -439,7 +219,7 @@ void RenderWidget::createPoly()
         indices.push_back(t.z);
     }
 
-
+     //USING POS
     std::vector<glm::vec3> new_vertices;
     for(unsigned int i = 0; i < vertices.size() - 3; ++i)
     {
@@ -450,6 +230,18 @@ void RenderWidget::createPoly()
     }
 
     vertices = new_vertices;
+
+    // BÉzier points
+//    std::vector<glm::vec3> new_vertices;
+//    for(unsigned int i = 0; i < vertices.size()-4; ++i)
+//    {
+//        new_vertices.push_back(vertices[i+3]);
+//        new_vertices.push_back(vertices[i+4]);
+//    }
+
+//    vertices = new_vertices;
+
+   std::cout << vertices.size() << std::endl;
 
     normals = std::vector<glm::vec3>(vertices.size());
     texCoords =  std::vector<glm::vec2>(vertices.size());

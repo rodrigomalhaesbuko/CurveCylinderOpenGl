@@ -4,4 +4,8 @@
         <file alias="geometry">Shaders/geometryshader.glsl</file>
         <file alias="vertex">Shaders/vertexshader.glsl</file>
     </qresource>
+    <qresource prefix="/">
+        <file>Shaders/TEShader.glsl</file>
+        <file>Shaders/TCShader.glsl</file>
+    </qresource>
 </RCC>
