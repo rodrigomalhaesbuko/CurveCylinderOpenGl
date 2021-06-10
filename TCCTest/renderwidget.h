@@ -24,6 +24,11 @@ private:
     virtual void paintGL();
     virtual void resizeGL(int w, int h);
 
+    bool gpu = false;
+
+    void setupCPU(const std::vector<glm::vec3> &polyline);
+    void setupGPU(const std::vector<glm::vec3> &polyline);
+
     //ArcBall
     int radius;
     glm::ivec2 center;
@@ -50,6 +55,10 @@ private:
     void createVBO();
     void createTexture(const std::string& imagePath);
 
+    void computeNormals();
+    void createWireframeTexture();
+    void uptadeWireframeTexture(unsigned int textureId, float lineThickness);
+
     void keyPressEvent(QKeyEvent *event);
 
     QOpenGLShaderProgram program;
@@ -69,6 +78,9 @@ private:
 
     unsigned int textureID;
     unsigned int textureID2;
+
+    //Texture wireframe Id.
+    unsigned int wireframeTextureId;
 };
 
 #endif // RENDERWIDGET_H

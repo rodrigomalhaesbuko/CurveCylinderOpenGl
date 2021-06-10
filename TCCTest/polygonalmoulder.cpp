@@ -13,6 +13,11 @@
 
 using namespace Eigen;
 
+#ifndef M_PI
+    #define M_PI 3.14159265358979323846
+#endif
+
+
 PolygonalMoulder::PolygonalMoulder()
 {
 
@@ -125,12 +130,14 @@ std::vector<glm::vec3> PolygonalMoulder::createShape(std::vector<glm::vec3> poly
     std::cout << "Triangulo" << std::endl;
     printVector3(*tri);
 
-    return polyInterpolated;
+//    return polyInterpolated;
     //return pos;
+    return vertices;
 
 }
 
-void PolygonalMoulder::printVector3(std::vector<glm::vec3> v){
+void PolygonalMoulder::printVector3(std::vector<glm::vec3> v)
+{
     int tam = v.size();
     for(int i=0; i < tam; i++){
         std::cout << "[ " << v[i].x << ", " << v[i].y << ", " <<  v[i].z <<  "]," << std::endl;
@@ -140,8 +147,8 @@ void PolygonalMoulder::printVector3(std::vector<glm::vec3> v){
 
 //Interpola a curva
 //Recebe a polygonal
-std::vector<glm::vec3> PolygonalMoulder::bezierInterpolation(std::vector<glm::vec3> poly){
-
+std::vector<glm::vec3> PolygonalMoulder::bezierInterpolation(std::vector<glm::vec3> poly)
+{
   std::vector<glm::vec3> v;
   int n = poly.size(); // numero de pontos
   int nt = n-1; // numero de tramos
@@ -265,7 +272,8 @@ std::vector<glm::vec3> PolygonalMoulder::bezierInterpolation(std::vector<glm::ve
 }
 
 
-void PolygonalMoulder::rotaciona(glm::vec3 u0, glm::vec3 v0, glm::vec3 t0, glm::vec3 t1, glm::vec3 *u1, glm::vec3 *v1){
+void PolygonalMoulder::rotaciona(glm::vec3 u0, glm::vec3 v0, glm::vec3 t0, glm::vec3 t1,
+                                 glm::vec3 *u1, glm::vec3 *v1){
     glm::vec3 eixo = glm::cross(t0,t1);
     if(glm::length(eixo) >= 0.000000001){
         eixo = glm::normalize(eixo);
@@ -295,7 +303,8 @@ void PolygonalMoulder::rotaciona(glm::vec3 u0, glm::vec3 v0, glm::vec3 t0, glm::
         return u1,v1*/
 }
 
-void PolygonalMoulder::getPosAndTan( std::vector<glm::vec3> v, int ni, std::vector<glm::vec3> *pos, std::vector<glm::vec3> *tan){
+void PolygonalMoulder::getPosAndTan( std::vector<glm::vec3> v, int ni,
+                                     std::vector<glm::vec3> *pos, std::vector<glm::vec3> *tan){
 
         int m = v.size();
         int nt = (int((m-1)/3) + 1) - 1;
@@ -373,7 +382,9 @@ std::vector<glm::vec3> PolygonalMoulder::createCircle(float radius, int numberOf
 
 }
 
-std::vector<glm::vec3> PolygonalMoulder::createVertices(std::vector<glm::vec3>  pos, std::vector<glm::vec3>  u,std::vector<glm::vec3>  v, std::vector<glm::vec3>  tan, float radius, int numberOfPoints){
+std::vector<glm::vec3> PolygonalMoulder::createVertices(std::vector<glm::vec3>  pos, std::vector<glm::vec3>  u,
+                                                        std::vector<glm::vec3>  v, std::vector<glm::vec3>  tan,
+                                                        float radius, int numberOfPoints){
      std::vector<glm::vec3> vertices;
      std::vector<glm::vec3> circle = createCircle(radius, numberOfPoints);
 
@@ -444,9 +455,3 @@ std::vector<glm::vec3> PolygonalMoulder::createTriangles(int pointsInCircle, int
 
     return tri;
 }
-
-
-
-
-
-

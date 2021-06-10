@@ -3,6 +3,7 @@
         <file alias="fragment">Shaders/fragmentshader.glsl</file>
         <file alias="geometry">Shaders/geometryshader.glsl</file>
         <file alias="vertex">Shaders/vertexshader.glsl</file>
+        <file alias="geometry-cpu">Shaders/geometryshader_cpu.glsl</file>
     </qresource>
     <qresource prefix="/">
         <file>Shaders/TEShader.glsl</file>

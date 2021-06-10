@@ -17,26 +17,50 @@ uniform Material material;
 
 in vec3 fColor;
 
-in vec3 fragPos;
-in vec3 fragNormal;
+in vec3 gNormal;
+in vec3 gLightDir;
 in vec2 fragUV;
 uniform sampler2D sampler;
 out vec3 finalColor;
+
+//Wireframe data
+uniform sampler1D wireframe; //The texture sampler
+in vec3 wireframeUVW;        //The texture coordinates
+
+
 void main()
 {
-//    vec3 ambient = material.ambient;
-//    vec3 diffuse = vec3(0.0,0.0,0.0);
-//    vec3 specular = vec3(0.0,0.0,0.0);
-//    vec3 N = normalize(fragNormal * texture(sampler, fragUV).rgb);
-//    vec3 L = normalize(light.position - fragPos);
-//    float iDif = dot(L,N);
-//    if( iDif > 0 )
-//    {
-//        diffuse = iDif * material.diffuse;
-//        vec3 V = normalize(-fragPos);
-//        vec3 H = normalize(L + V);
-//        float iSpec = pow(max(dot(N,H),0.0), material.shininess);
-//        specular = iSpec * material.specular;
-//    }
-    finalColor = fColor;
+    vec3 color = vec3(0, 0, 0);
+    vec3 diffuse = vec3(0, 0, 0);
+    vec3 specular = vec3(0, 0, 0);
+    vec3 ambient = material.ambient;
+
+    vec3 N = normalize(gNormal);
+    vec3 L = normalize(gLightDir);
+
+    float iDif = abs(dot(N, L));
+
+    if(iDif > 0)
+    {
+        diffuse = iDif * material.diffuse;
+
+        //@todo: Compute specular
+    }
+
+    color = ambient + diffuse + specular;
+
+    //Uncomment to render the normal color
+//    color = N;
+
+    //Add wireframe combining the final color to the wireframe texture
+    vec3 wireframeColor = vec3(1, 1, 1);
+
+    float alpha1 = texture( wireframe, wireframeUVW.x ).r;
+    float alpha2 = texture( wireframe, wireframeUVW.y ).r;
+    float alpha3 = texture( wireframe, wireframeUVW.z ).r;
+
+    finalColor = color;
+    finalColor = mix( finalColor, wireframeColor, alpha1 );
+    finalColor = mix( finalColor, wireframeColor, alpha2 );
+    finalColor = mix( finalColor, wireframeColor, alpha3 );
 }

@@ -81,22 +81,19 @@ void RenderWidget::initializeGL()
     //Define a viewport
     glViewport(0,0, width(), height());
 
-    //Compilar os shaders
-    program.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/vertex");
-    program.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/fragment");
-    program.addShaderFromSourceFile(QOpenGLShader::Geometry, ":/Shaders/geometry");
-    program.addShaderFromSourceFile(QOpenGLShader::TessellationEvaluation, ":/Shaders/TEShader.glsl");
-    program.addShaderFromSourceFile(QOpenGLShader::TessellationControl, ":/Shaders/TCShader.glsl");
+    //Cria o modelo
+    std::vector<glm::vec3> polyline;
+    polyline.push_back(glm::vec3(0, 0, 0));
+    polyline.push_back(glm::vec3(0, 0, -100));
+    polyline.push_back(glm::vec3(0, 13, -150));
+    polyline.push_back(glm::vec3(0, 50, -187));
+    polyline.push_back(glm::vec3(0, 100, -200));
+    polyline.push_back(glm::vec3(10, 120, -180));
+    polyline.push_back(glm::vec3(20, 50, -160));
+    polyline.push_back(glm::vec3(30, 20, -200));
+    polyline.push_back(glm::vec3(40, 13, -230));
 
-
-    program.link();
-
-    // QUAD DE PEDRAS OU BOLA DE GOLFE
-    //Cena de esferas
-    createPoly();
-
-    //Criar VBO e VAO
-    createVBO();
+    setupCPU(polyline);
 
     glm::vec3 eye(0,0,100);
     glm::vec3 verticesMedia;
@@ -112,11 +109,13 @@ void RenderWidget::initializeGL()
     centerBall = centerM;
     upBall = up;
 
-
     //Definir matriz view e projection
     float ratio = static_cast<float>(width())/height();
     view = glm::lookAt(eye, centerM, up);
     proj = glm::perspective<float>(glm::radians(45.0f), ratio, 0.1, 1000.0f);
+
+    //Setup the wireframe texture
+    createWireframeTexture();
 }
 
 
@@ -153,6 +152,11 @@ void RenderWidget::paintGL()
     glBindTexture(GL_TEXTURE_2D, textureID);
     program.setUniformValue("sampler", 0);
 
+    //Ativar e linkar a textura do wireframe
+    glActiveTexture( GL_TEXTURE1 );
+    glBindTexture(GL_TEXTURE_1D, wireframeTextureId);
+    program.setUniformValue("wireframe", 1);
+
     QMatrix4x4 sphereModel;
     sphereModel.translate(-centerBall.x,-centerBall.y, -centerBall.z);
     //Passar as matrizes mv e mvp
@@ -163,10 +167,16 @@ void RenderWidget::paintGL()
     program.setUniformValue("mvp", mvp);
 
     //Desenhar
-
-    glPatchParameteri( GL_PATCH_VERTICES, 4);
-    glDrawArrays(GL_PATCHES, 0, vertices.size());
-    //glDrawArrays(GL_LINES, 0, vertices.size());
+    if(gpu)
+    {
+    //    glPatchParameteri( GL_PATCH_VERTICES, 4);
+        glDrawArrays(GL_PATCHES, 0, vertices.size());
+        //glDrawArrays(GL_LINES, 0, vertices.size());
+    }
+    else
+    {
+        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, nullptr);
+    }
 }
 
 
@@ -176,6 +186,74 @@ void RenderWidget::resizeGL(int w, int h)
 
     //Atualizar a matriz de projeção
 }
+
+
+
+void RenderWidget::setupCPU(const std::vector<glm::vec3> &polyline)
+{
+    //Create the program
+    program.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/vertex");
+    program.addShaderFromSourceFile(QOpenGLShader::Geometry, ":/Shaders/geometry-cpu");
+    program.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/fragment");
+    program.link();
+
+    PolygonalMoulder polyMoulder = PolygonalMoulder();
+
+    std::vector<glm::vec3> tri;
+    vertices = polyMoulder.createShape(polyline, &tri);
+
+    indices.clear();
+    for(glm::vec3 t: tri)
+    {
+        indices.push_back(t.x);
+        indices.push_back(t.y);
+        indices.push_back(t.z);
+    }
+
+    computeNormals();
+
+    //Not using. Erase.
+    texCoords = std::vector<glm::vec2>(vertices.size());
+    tangentes = std::vector<glm::vec3>(vertices.size());
+
+    //Setup VBO and VAO.
+    createVBO();
+
+    //Set gpu mode off
+    gpu = false;
+}
+
+
+
+void RenderWidget::setupGPU(const std::vector<glm::vec3> &polyline)
+{
+    //Create the program
+    program.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/vertex");
+    program.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/fragment");
+    program.addShaderFromSourceFile(QOpenGLShader::Geometry, ":/Shaders/geometry");
+    program.addShaderFromSourceFile(QOpenGLShader::TessellationEvaluation, ":/Shaders/TEShader.glsl");
+    program.addShaderFromSourceFile(QOpenGLShader::TessellationControl, ":/Shaders/TCShader.glsl");
+    program.link();
+
+    //Setup the model.
+    //Wrong: vertices should be the bezier control points
+    vertices = polyline;
+
+    //Should be calculated inside the shaders
+    normals = std::vector<glm::vec3>(vertices.size());
+
+    //Not using. Erase.
+    texCoords = std::vector<glm::vec2>(vertices.size());
+    tangentes = std::vector<glm::vec3>(vertices.size());
+
+    //Setup VBO and VAO.
+    createVBO();
+
+    //Set gpu mode on
+    gpu = true;
+}
+
+
 
 glm::quat RenderWidget::pointToQuat(glm::ivec2 screenPoint)
 {
@@ -241,21 +319,23 @@ void RenderWidget::createPoly()
 //    vertices = new_vertices;
 
     // BÉzier points
-    std::vector<glm::vec3> new_vertices;
-    // Esse algoritimo pega os pontos da Bézier gerados pelo polygon moulder e cola uma bézier na outra
-    for(unsigned int i = 0; i < vertices.size()-3; i = i + 3)
-    {
-        new_vertices.push_back(vertices[i + 0]);
-        new_vertices.push_back(vertices[i + 1]);
-        new_vertices.push_back(vertices[i + 2]);
-        new_vertices.push_back(vertices[i + 3]);
-    }
+//    std::vector<glm::vec3> new_vertices;
+//    // Esse algoritimo pega os pontos da Bézier gerados pelo polygon moulder e cola uma bézier na outra
+//    for(unsigned int i = 0; i < vertices.size()-3; i = i + 3)
+//    {
+//        new_vertices.push_back(vertices[i + 0]);
+//        new_vertices.push_back(vertices[i + 1]);
+//        new_vertices.push_back(vertices[i + 2]);
+//        new_vertices.push_back(vertices[i + 3]);
+//    }
 
-    vertices = new_vertices;
+//    vertices = new_vertices;
 
    std::cout << vertices.size() << std::endl;
 
-    normals = std::vector<glm::vec3>(vertices.size());
+//    normals = std::vector<glm::vec3>(vertices.size());
+   computeNormals();
+
     texCoords =  std::vector<glm::vec2>(vertices.size());
     tangentes =  std::vector<glm::vec3>(vertices.size());
 }
@@ -340,4 +420,101 @@ void RenderWidget::createTexture(const std::string& imagePath)
 
     //Definir parametros de filtro e gerar mipmap
     glGenerateMipmap(GL_TEXTURE_2D);
+}
+
+
+
+void RenderWidget::computeNormals()
+{
+    normals = std::vector<glm::vec3>(vertices.size(), {0.0f, 0.0f, 0.0f});
+
+    auto numTriangles = indices.size() / 3;
+
+    //Compute the normals of every triangle and accumulate it in the vertices
+    for(unsigned int i = 0; i < numTriangles; ++i)
+    {
+        //The triangle vertex indices
+        unsigned int i0 = indices[i * 3 + 0];
+        unsigned int i1 = indices[i * 3 + 1];
+        unsigned int i2 = indices[i * 3 + 2];
+
+        //The coordinates of each vertex
+        glm::vec3 v0 = vertices[i0];
+        glm::vec3 v1 = vertices[i1];
+        glm::vec3 v2 = vertices[i2];
+
+        //Compute the triangle normal
+        glm::vec3 n = glm::cross(v1 - v0, v2 - v0);
+
+        //Accumulate n in every vertex normal
+        normals[i0] += n;
+        normals[i1] += n;
+        normals[i2] += n;
+    }
+
+    //Normalize the normals
+    for(auto &n : normals)
+    {
+        n = glm::normalize(n);
+    }
+}
+
+
+
+void RenderWidget::createWireframeTexture()
+{
+    //Create a new texture.
+    glGenTextures( 1, &wireframeTextureId );
+
+    //Update the texture with correct thickness.
+    uptadeWireframeTexture(wireframeTextureId, 1.0f);
+}
+
+
+
+void RenderWidget::uptadeWireframeTexture(unsigned int textureId, float lineThickness)
+{
+    //Build texture vector.
+    const int TAM = 1024;
+    unsigned char wireframeTexture[TAM];
+    memset( wireframeTexture, 0, TAM * sizeof (unsigned char ) );
+
+    int idx = 0;
+    while (lineThickness > 1.0f && idx < TAM)
+    {
+        wireframeTexture[TAM - 1 - idx] = 255;
+        lineThickness = lineThickness - 1.0f;
+        idx++;
+    }
+
+    if (idx < TAM)
+    {
+        wireframeTexture[TAM - 1 - idx] = static_cast<unsigned char>(255 * lineThickness);
+    }
+
+    //Turn the texture as current.
+    glBindTexture( GL_TEXTURE_1D, textureId );
+
+    //Build mipmap pyramid.
+    int i = 0, j = TAM;
+    for (i = 0, j = TAM; j > 4; j /= 2, i++)
+    {
+        glTexImage1D( GL_TEXTURE_1D, i, GL_RED, j, 0, GL_RED, GL_UNSIGNED_BYTE, wireframeTexture + ( TAM - j ) );
+    }
+
+    //Avoiding image saturation for rendering dense meshes.
+    for (int s = 0; s <= idx; s++)
+    {
+        wireframeTexture[TAM - 1 - s] /= 3;
+    }
+
+    for (; j > 0; j /= 2, i++)
+    {
+        glTexImage1D( GL_TEXTURE_1D, i, GL_RED, j, 0, GL_RED, GL_UNSIGNED_BYTE, wireframeTexture + ( TAM - j ) );
+    }
+
+    //Define filters.
+    glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
+    glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT );
 }

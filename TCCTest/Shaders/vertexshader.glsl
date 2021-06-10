@@ -5,19 +5,27 @@ layout( location = 1 ) in vec3 vertexNormal;
 
 //Coordenadas de textura
 layout( location = 2 ) in vec2 vertexTexCoord;
-out vec3 fColor;
 uniform mat4 mvp;
 uniform mat4 mv;
 uniform mat4 mv_ti; //inversa transposta da MV
 //Posição e normal no espaço da câmera:
 out vec3 fragPos;
-out vec3 fragNormal;
+
+out vec3 vNormal;
+out vec3 vLightDir;
+out vec3 vColor;
+
 //Coordenadas de textura do fragmento
 out vec2 fragUV;
 
 void main()
 {
-    gl_Position = mvp * vec4( vertexPos, 1 );
+    vec3 peye = vec3(mv * vec4(vertexPos, 1.0f));
+
+    vec3 lpos = vec3(0, 0, 0); //light in the camera
+    vLightDir = normalize(lpos - peye);
+
+    gl_Position = mvp * vec4(vertexPos, 1 );
 //    int m = v.size(); // me e o tamanho da bezier interpolada
 //    int nt = (int((m-1)/3) + 1) - 1;
 //    for(int i=0; i< nt; i++){
@@ -39,8 +47,8 @@ void main()
 
 //    }
 //    fragPos = ( mv * vec4( vertexPos, 1 ) ).xyz;
-//    fragNormal = ( mv_ti * vec4( vertexNormal, 0 ) ).xyz;
+    vNormal = ( mv_ti * vec4( vertexNormal, 0 ) ).xyz;
 //    fragUV = vertexTexCoord;
 
-        fColor = vec3(1.0,1.0,1.0);
+    vColor = vec3(1.0,1.0,1.0);
 }

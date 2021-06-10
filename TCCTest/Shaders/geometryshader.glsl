@@ -5,6 +5,7 @@ layout (triangle_strip, max_vertices = 1000) out;
 vec4 myValues[1000];
 
 out vec3 fColor;
+out vec3 wireframeUVW;
 
 void drawCircle(vec4 actual_Point, vec4 nextPoint, float radius){
     float angle = 0;
@@ -33,27 +34,32 @@ void drawCircle(vec4 actual_Point, vec4 nextPoint, float radius){
         int k1 = (i+1)%numberOfPointsInCircle;
         gl_Position = myValues[k];
         fColor = vec3(1.0f, 1.0f, 0.0f);
+        wireframeUVW = vec3(1.0, 1.0, 0.0);
         EmitVertex();
 
         gl_Position = myValues[k1];
         fColor = vec3(1.0f, 1.0f, 0.0f);
+        wireframeUVW = vec3(0.0, 1.0, 1.0);
         EmitVertex();
 
         gl_Position = myValues[k1 + numberOfPointsInCircle];
         fColor = vec3(1.0f, 1.0f, 0.0f);
+        wireframeUVW = vec3(1.0, 0.0, 1.0);
         EmitVertex();
-
 
         gl_Position = myValues[k];
         fColor = vec3(1.0f, 0.0f, 0.0f);
+        wireframeUVW = vec3(1.0, 1.0, 0.0);
         EmitVertex();
 
         gl_Position = myValues[k1 + numberOfPointsInCircle];
         fColor = vec3(1.0f, 0.0f, 0.0f);
+        wireframeUVW = vec3(0.0, 1.0, 1.0);
         EmitVertex();
 
         gl_Position = myValues[k + numberOfPointsInCircle];
         fColor = vec3(1.0f, 0.0f, 0.0f);
+        wireframeUVW = vec3(1.0, 0.0, 1.0);
         EmitVertex();
         }
 
