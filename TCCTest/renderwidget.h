@@ -50,6 +50,8 @@ private:
     void createVBO();
     void createTexture(const std::string& imagePath);
 
+    void keyPressEvent(QKeyEvent *event);
+
     QOpenGLShaderProgram program;
 
     unsigned int VAO;

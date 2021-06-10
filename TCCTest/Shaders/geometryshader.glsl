@@ -61,5 +61,6 @@ void drawCircle(vec4 actual_Point, vec4 nextPoint, float radius){
 
 
 void main() {
+
     drawCircle(gl_in[0].gl_Position, gl_in[1].gl_Position, 10.0f);
 }

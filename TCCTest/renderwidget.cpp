@@ -52,6 +52,15 @@ void RenderWidget::wheelEvent(QWheelEvent *event){
         update();
 }
 
+void RenderWidget::keyPressEvent(QKeyEvent *event)
+{
+    if(event->key() == Qt::Key_G)
+    {
+        program.addShaderFromSourceFile(QOpenGLShader::Geometry, ":/Shaders/geometry");
+        program.link();
+    }
+}
+
 
 // init gl ativa sempre (chamada automaticamente )
 void RenderWidget::initializeGL()
@@ -76,11 +85,11 @@ void RenderWidget::initializeGL()
     program.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/vertex");
     program.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/fragment");
     program.addShaderFromSourceFile(QOpenGLShader::Geometry, ":/Shaders/geometry");
-    //program.addShaderFromSourceFile(QOpenGLShader::TessellationEvaluation, ":/Shaders/TEShader.glsl");
-    //program.addShaderFromSourceFile(QOpenGLShader::TessellationControl, ":/Shaders/TCShader.glsl");
+    program.addShaderFromSourceFile(QOpenGLShader::TessellationEvaluation, ":/Shaders/TEShader.glsl");
+    program.addShaderFromSourceFile(QOpenGLShader::TessellationControl, ":/Shaders/TCShader.glsl");
+
 
     program.link();
-
 
     // QUAD DE PEDRAS OU BOLA DE GOLFE
     //Cena de esferas
@@ -156,8 +165,8 @@ void RenderWidget::paintGL()
     //Desenhar
 
     glPatchParameteri( GL_PATCH_VERTICES, 4);
-    //glDrawArrays(GL_PATCHES, 0, vertices.size());
-    glDrawArrays(GL_LINES, 0, vertices.size());
+    glDrawArrays(GL_PATCHES, 0, vertices.size());
+    //glDrawArrays(GL_LINES, 0, vertices.size());
 }
 
 
@@ -205,10 +214,10 @@ void RenderWidget::createPoly()
     poly.push_back(glm::vec3(0, 13, -150));
     poly.push_back(glm::vec3(0, 50, -187));
     poly.push_back(glm::vec3(0, 100, -200));
-//    poly.push_back(glm::vec3(10, 120, -180));
-//    poly.push_back(glm::vec3(20, 50, -160));
-//    poly.push_back(glm::vec3(30, 20, -200));
-//    poly.push_back(glm::vec3(40, 13, -230));
+    poly.push_back(glm::vec3(10, 120, -180));
+    poly.push_back(glm::vec3(20, 50, -160));
+    poly.push_back(glm::vec3(30, 20, -200));
+    poly.push_back(glm::vec3(40, 13, -230));
 
     std::vector<glm::vec3> tri;
     vertices = polyMoulder.createShape(poly, &tri);
@@ -220,26 +229,29 @@ void RenderWidget::createPoly()
     }
 
      //USING POS
-    std::vector<glm::vec3> new_vertices;
-    for(unsigned int i = 0; i < vertices.size() - 3; ++i)
-    {
-        new_vertices.push_back(vertices[i+0]);
-        new_vertices.push_back(vertices[i+1]);
-        new_vertices.push_back(vertices[i+2]);
-        new_vertices.push_back(vertices[i+3]);
-    }
-
-    vertices = new_vertices;
-
-    // BÉzier points
 //    std::vector<glm::vec3> new_vertices;
-//    for(unsigned int i = 0; i < vertices.size()-4; ++i)
+//    for(unsigned int i = 0; i < vertices.size() - 3; ++i)
 //    {
+//        new_vertices.push_back(vertices[i+0]);
+//        new_vertices.push_back(vertices[i+1]);
+//        new_vertices.push_back(vertices[i+2]);
 //        new_vertices.push_back(vertices[i+3]);
-//        new_vertices.push_back(vertices[i+4]);
 //    }
 
 //    vertices = new_vertices;
+
+    // BÉzier points
+    std::vector<glm::vec3> new_vertices;
+    // Esse algoritimo pega os pontos da Bézier gerados pelo polygon moulder e cola uma bézier na outra
+    for(unsigned int i = 0; i < vertices.size()-3; i = i + 3)
+    {
+        new_vertices.push_back(vertices[i + 0]);
+        new_vertices.push_back(vertices[i + 1]);
+        new_vertices.push_back(vertices[i + 2]);
+        new_vertices.push_back(vertices[i + 3]);
+    }
+
+    vertices = new_vertices;
 
    std::cout << vertices.size() << std::endl;
 
