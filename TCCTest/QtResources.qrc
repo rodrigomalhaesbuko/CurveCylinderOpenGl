@@ -8,5 +8,6 @@
     <qresource prefix="/">
         <file>Shaders/TEShader.glsl</file>
         <file>Shaders/TCShader.glsl</file>
+        <file>Shaders/vertexshader_tess.glsl</file>
     </qresource>
 </RCC>

@@ -25,9 +25,12 @@ private:
     virtual void resizeGL(int w, int h);
 
     bool gpu = false;
+    bool cpuAndGpu = false;
 
     void setupCPU(const std::vector<glm::vec3> &polyline);
+    void setupCPUAndGPU(const std::vector<glm::vec3> &polyline);
     void setupGPU(const std::vector<glm::vec3> &polyline);
+
 
     //ArcBall
     int radius;
@@ -40,6 +43,14 @@ private:
     glm::vec3 eyeBall;
     glm::vec3 centerBall;
     glm::vec3 upBall;
+
+    // tesselation
+    int numberOfTesselations;
+    bool wireframeON;
+
+    // Cylinder Control
+    int numberOfPointsInCircle;
+    float radiusCircle;
 
 
     virtual void mouseReleaseEvent(QMouseEvent *event);

@@ -59,6 +59,21 @@ void RenderWidget::keyPressEvent(QKeyEvent *event)
         program.addShaderFromSourceFile(QOpenGLShader::Geometry, ":/Shaders/geometry");
         program.link();
     }
+
+    if(event->key() == Qt::Key_W)
+    {
+        wireframeON = !wireframeON;
+    }
+
+    if(event->key() == Qt::Key_Up)
+    {
+        numberOfTesselations++;
+    }
+
+    if(event->key() == Qt::Key_Down)
+    {
+        numberOfTesselations--;
+    }
 }
 
 
@@ -93,7 +108,21 @@ void RenderWidget::initializeGL()
     polyline.push_back(glm::vec3(30, 20, -200));
     polyline.push_back(glm::vec3(40, 13, -230));
 
-    setupCPU(polyline);
+
+    // Cylinder control
+    numberOfPointsInCircle = 10;
+    radiusCircle = 10;
+
+    // CPU FLOW
+    //setupCPU(polyline);
+    // CPU + GEOMETRY FLOW
+    //setupCPUAndGPU(polyline);
+    // CPU + TESSELATION + GEOMETRY FLOW
+    setupGPU(polyline);
+
+    //wireframe
+    wireframeON = true;
+
 
     glm::vec3 eye(0,0,100);
     glm::vec3 verticesMedia;
@@ -146,6 +175,15 @@ void RenderWidget::paintGL()
     program.setUniformValue("material.specular", QVector3D(1.0f,1.0f,1.0f));
     program.setUniformValue("material.shininess", 100.0f);
 
+    //tesselation
+    program.setUniformValue("numberOfTesselations", numberOfTesselations);
+
+    // wireFrame
+    program.setUniformValue("wireframeON", wireframeON);
+
+    //Cylinder COntrol
+    program.setUniformValue("numberOfPointsInCircle", numberOfPointsInCircle);
+    program.setUniformValue("radiusCircle", radiusCircle);
 
     //Ativar e linkar a textura
     glActiveTexture(GL_TEXTURE0);
@@ -169,9 +207,11 @@ void RenderWidget::paintGL()
     //Desenhar
     if(gpu)
     {
-    //    glPatchParameteri( GL_PATCH_VERTICES, 4);
+        glPatchParameteri( GL_PATCH_VERTICES, 4);
         glDrawArrays(GL_PATCHES, 0, vertices.size());
-        //glDrawArrays(GL_LINES, 0, vertices.size());
+    }
+    else if(cpuAndGpu){
+        glDrawArrays(GL_LINES, 0, vertices.size());
     }
     else
     {
@@ -198,9 +238,8 @@ void RenderWidget::setupCPU(const std::vector<glm::vec3> &polyline)
     program.link();
 
     PolygonalMoulder polyMoulder = PolygonalMoulder();
-
     std::vector<glm::vec3> tri;
-    vertices = polyMoulder.createShape(polyline, &tri);
+    vertices = polyMoulder.createShape(polyline, &tri, radiusCircle, numberOfPointsInCircle);
 
     indices.clear();
     for(glm::vec3 t: tri)
@@ -228,16 +267,33 @@ void RenderWidget::setupCPU(const std::vector<glm::vec3> &polyline)
 void RenderWidget::setupGPU(const std::vector<glm::vec3> &polyline)
 {
     //Create the program
-    program.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/vertex");
+    program.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/vertexshader_tess.glsl");
     program.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/fragment");
     program.addShaderFromSourceFile(QOpenGLShader::Geometry, ":/Shaders/geometry");
     program.addShaderFromSourceFile(QOpenGLShader::TessellationEvaluation, ":/Shaders/TEShader.glsl");
     program.addShaderFromSourceFile(QOpenGLShader::TessellationControl, ":/Shaders/TCShader.glsl");
     program.link();
 
+    // default value of tesselation
+    numberOfTesselations = 4;
+
     //Setup the model.
     //Wrong: vertices should be the bezier control points
-    vertices = polyline;
+    PolygonalMoulder polyMoulder = PolygonalMoulder();
+    vertices = polyMoulder.bezierInterpolation(polyline);
+
+    // BÉzier points
+    std::vector<glm::vec3> new_vertices;
+    // Esse algoritimo pega os pontos da Bézier gerados pelo polygon moulder e cola uma bézier na outra
+    for(unsigned int i = 0; i < vertices.size()-3; i = i + 3)
+    {
+        new_vertices.push_back(vertices[i + 0]);
+        new_vertices.push_back(vertices[i + 1]);
+        new_vertices.push_back(vertices[i + 2]);
+        new_vertices.push_back(vertices[i + 3]);
+    }
+
+    vertices = new_vertices;
 
     //Should be calculated inside the shaders
     normals = std::vector<glm::vec3>(vertices.size());
@@ -251,6 +307,46 @@ void RenderWidget::setupGPU(const std::vector<glm::vec3> &polyline)
 
     //Set gpu mode on
     gpu = true;
+}
+
+void RenderWidget::setupCPUAndGPU(const std::vector<glm::vec3> &polyline)
+{
+    //Create the program
+    program.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/vertexshader_tess.glsl");
+    program.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/fragment");
+    program.addShaderFromSourceFile(QOpenGLShader::Geometry, ":/Shaders/geometry");
+    program.link();
+
+    //Setup the model.
+    //Wrong: vertices should be the bezier control points
+    PolygonalMoulder polyMoulder = PolygonalMoulder();
+    std::vector<glm::vec3> tan;
+    vertices = polyMoulder.getOnlyPos(polyline, &tan);
+
+    //USING POS
+    std::vector<glm::vec3> new_vertices;
+    for(unsigned int i = 0; i < vertices.size() - 3; ++i)
+    {
+        new_vertices.push_back(vertices[i+0]);
+        new_vertices.push_back(vertices[i+1]);
+        new_vertices.push_back(vertices[i+2]);
+        new_vertices.push_back(vertices[i+3]);
+    }
+
+    vertices = new_vertices;
+
+    //Should be calculated inside the shaders
+    normals = std::vector<glm::vec3>(vertices.size());
+
+    //Not using. Erase.
+    texCoords = std::vector<glm::vec2>(vertices.size());
+    tangentes = tan;
+
+    //Setup VBO and VAO.
+    createVBO();
+
+    //Set gpu mode on
+    cpuAndGpu = true;
 }
 
 
@@ -279,65 +375,6 @@ void RenderWidget::rotate(glm::ivec2 p1, glm::ivec2 p2)
 
     auto rot = glm::mat4_cast(q);
     model = rot * model;
-}
-
-void RenderWidget::createPoly()
-{
-    //TESTAR CODIGOS EM PYTHON
-    PolygonalMoulder polyMoulder = PolygonalMoulder();
-    //[0,0,0],[0,0,-100], [0,13,-150], [0,50, -187], [0,100,-200]
-    std::vector<glm::vec3> poly;
-    poly.push_back(glm::vec3(0, 0, 0));
-    poly.push_back(glm::vec3(0, 0, -100));
-    poly.push_back(glm::vec3(0, 13, -150));
-    poly.push_back(glm::vec3(0, 50, -187));
-    poly.push_back(glm::vec3(0, 100, -200));
-    poly.push_back(glm::vec3(10, 120, -180));
-    poly.push_back(glm::vec3(20, 50, -160));
-    poly.push_back(glm::vec3(30, 20, -200));
-    poly.push_back(glm::vec3(40, 13, -230));
-
-    std::vector<glm::vec3> tri;
-    vertices = polyMoulder.createShape(poly, &tri);
-
-    for(glm::vec3 t: tri){
-        indices.push_back(t.x);
-        indices.push_back(t.y);
-        indices.push_back(t.z);
-    }
-
-     //USING POS
-//    std::vector<glm::vec3> new_vertices;
-//    for(unsigned int i = 0; i < vertices.size() - 3; ++i)
-//    {
-//        new_vertices.push_back(vertices[i+0]);
-//        new_vertices.push_back(vertices[i+1]);
-//        new_vertices.push_back(vertices[i+2]);
-//        new_vertices.push_back(vertices[i+3]);
-//    }
-
-//    vertices = new_vertices;
-
-    // BÉzier points
-//    std::vector<glm::vec3> new_vertices;
-//    // Esse algoritimo pega os pontos da Bézier gerados pelo polygon moulder e cola uma bézier na outra
-//    for(unsigned int i = 0; i < vertices.size()-3; i = i + 3)
-//    {
-//        new_vertices.push_back(vertices[i + 0]);
-//        new_vertices.push_back(vertices[i + 1]);
-//        new_vertices.push_back(vertices[i + 2]);
-//        new_vertices.push_back(vertices[i + 3]);
-//    }
-
-//    vertices = new_vertices;
-
-   std::cout << vertices.size() << std::endl;
-
-//    normals = std::vector<glm::vec3>(vertices.size());
-   computeNormals();
-
-    texCoords =  std::vector<glm::vec2>(vertices.size());
-    tangentes =  std::vector<glm::vec3>(vertices.size());
 }
 
 
