@@ -30,6 +30,7 @@ private:
     void setupCPU(const std::vector<glm::vec3> &polyline);
     void setupCPUAndGPU(const std::vector<glm::vec3> &polyline);
     void setupGPU(const std::vector<glm::vec3> &polyline);
+    void ChangePoly();
 
 
     //ArcBall
@@ -51,6 +52,9 @@ private:
     // Cylinder Control
     int numberOfPointsInCircle;
     float radiusCircle;
+    std::vector<glm::vec3> polyline;
+    bool animation = false;
+    float bola;
 
 
     virtual void mouseReleaseEvent(QMouseEvent *event);

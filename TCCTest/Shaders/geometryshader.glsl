@@ -5,7 +5,8 @@ layout (triangle_strip, max_vertices = 1000) out;
 vec4 myValues[1000];
 int lastPrimitiveIn;
 
-bool rotatation = false;
+bool rotation = false;
+float pi = 3.14159f;
 
 vec3 k[2];
 vec3 uEixo[2];
@@ -70,30 +71,33 @@ void drawCircle(vec4 actual_Point, vec4 nextPoint, float radius){
         float v = raio*sin(angle);
         float t = 0.f;
         myValues[i] =  actual_Point + vec4(u,v,t,1.0f);
-        angle = angle + 2.0f*3.14159f/(float(numberOfPointsInCircle));
+        myValues[numberOfPointsInCircle + i] =  nextPoint + vec4(u,v,t,1.0f);
+        angle = angle + 2.0f*pi/(float(numberOfPointsInCircle));
+
         // Rotation
-        if(rotatation){
+        if(rotation){
             vec3 aux = u*uEixo[0] + v*k[0] + t*vec3(tan[0]);
             myValues[i] = actual_Point + vec4(aux, 1.0f);
+            vec3 aux2 = u*uEixo[1] + v*k[1] + t*vec3(tan[1]);
+            myValues[numberOfPointsInCircle + i] = nextPoint + vec4(aux2, 1.0f);
         }
 
     }
 
-    angle = 0;
-    for(int i = numberOfPointsInCircle; i < (numberOfPointsInCircle) * 2; i++){
-        float u = raio*cos(angle);
-        float v = raio*sin(angle);
-        float t = 0.f;
-        myValues[i] =  nextPoint + vec4(u,v,t,1.0f);
-        angle = angle + 2.0f*3.14159f/(float(numberOfPointsInCircle));
-        //rotation
-        if(rotatation){
-            vec3 aux = u*uEixo[1] + v*k[1] + t*vec3(tan[1]);
-            myValues[i] = nextPoint + vec4(aux, 1.0f);
-        }
+//    angle = 0;
+//    for(int i = numberOfPointsInCircle; i < (numberOfPointsInCircle) * 2; i++){
+//        float u = raio*cos(angle);
+//        float v = raio*sin(angle);
+//        float t = 0.f;
+//        myValues[i] =  nextPoint + vec4(u,v,t,1.0f);
+//        angle = angle + 2.0f*3.14159f/(float(numberOfPointsInCircle));
+//        //rotation
+//        if(rotatation){
+//            vec3 aux = u*uEixo[1] + v*k[1] + t*vec3(tan[1]);
+//            myValues[i] = nextPoint + vec4(aux, 1.0f);
+//        }
 
-
-    }
+//    }
 
     for(int i = 0; i< numberOfPointsInCircle; i++){
         int k = i;

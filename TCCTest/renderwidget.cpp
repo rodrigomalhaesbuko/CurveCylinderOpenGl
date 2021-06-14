@@ -67,13 +67,52 @@ void RenderWidget::keyPressEvent(QKeyEvent *event)
 
     if(event->key() == Qt::Key_Up)
     {
-        numberOfTesselations++;
+        if(gpu)
+            numberOfTesselations++;
+        if(cpuAndGpu)
+            numberOfPointsInCircle++;
     }
 
     if(event->key() == Qt::Key_Down)
     {
-        numberOfTesselations--;
+        if(gpu)
+            numberOfTesselations--;
+        if(cpuAndGpu)
+            numberOfPointsInCircle--;
     }
+
+    if(event->key() == Qt::Key_A)
+    {
+        animation = !animation;
+    }
+
+}
+
+
+void RenderWidget::ChangePoly(){
+    for( unsigned int i = 0; i < polyline.size(); i++)
+    {
+        if(i%2==0)
+            polyline[i].z = polyline[i].z + 1*glm::cos(bola);
+        else
+            polyline[i].z = polyline[i].z + -1*glm::cos(bola);
+    }
+    bola += 3.1415f/80.0f;
+
+    // re build the curve
+    if(gpu)
+    {
+        setupGPU(polyline);
+    }
+    else if(cpuAndGpu){
+
+        setupCPUAndGPU(polyline);
+    }
+    else
+    {
+        setupCPU(polyline);
+    }
+
 }
 
 
@@ -97,7 +136,7 @@ void RenderWidget::initializeGL()
     glViewport(0,0, width(), height());
 
     //Cria o modelo
-    std::vector<glm::vec3> polyline;
+
     polyline.push_back(glm::vec3(0, 0, 0));
     polyline.push_back(glm::vec3(0, 0, -100));
     polyline.push_back(glm::vec3(0, 13, -150));
@@ -113,6 +152,9 @@ void RenderWidget::initializeGL()
     numberOfPointsInCircle = 10;
     radiusCircle = 10;
 
+    // default value of tesselation
+    numberOfTesselations = 4;
+
     // CPU FLOW
     //setupCPU(polyline);
     // CPU + GEOMETRY FLOW
@@ -122,7 +164,6 @@ void RenderWidget::initializeGL()
 
     //wireframe
     wireframeON = true;
-
 
     glm::vec3 eye(0,0,100);
     glm::vec3 verticesMedia;
@@ -145,6 +186,32 @@ void RenderWidget::initializeGL()
 
     //Setup the wireframe texture
     createWireframeTexture();
+
+    if(gpu)
+    {
+        //Create the program
+        program.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/vertexshader_tess.glsl");
+        program.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/fragment");
+        program.addShaderFromSourceFile(QOpenGLShader::Geometry, ":/Shaders/geometry");
+        program.addShaderFromSourceFile(QOpenGLShader::TessellationEvaluation, ":/Shaders/TEShader.glsl");
+        program.addShaderFromSourceFile(QOpenGLShader::TessellationControl, ":/Shaders/TCShader.glsl");
+        program.link();
+    }
+    else if(cpuAndGpu){
+        //Create the program
+        program.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/vertexshader_tess.glsl");
+        program.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/fragment");
+        program.addShaderFromSourceFile(QOpenGLShader::Geometry, ":/Shaders/geometry");
+        program.link();
+    }
+    else
+    {
+        //Create the program
+        program.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/vertex");
+        program.addShaderFromSourceFile(QOpenGLShader::Geometry, ":/Shaders/geometry-cpu");
+        program.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/fragment");
+        program.link();
+    }
 }
 
 
@@ -217,6 +284,11 @@ void RenderWidget::paintGL()
     {
         glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, nullptr);
     }
+    //Animation
+    if(animation){
+       ChangePoly();
+    }
+
 }
 
 
@@ -231,11 +303,6 @@ void RenderWidget::resizeGL(int w, int h)
 
 void RenderWidget::setupCPU(const std::vector<glm::vec3> &polyline)
 {
-    //Create the program
-    program.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/vertex");
-    program.addShaderFromSourceFile(QOpenGLShader::Geometry, ":/Shaders/geometry-cpu");
-    program.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/fragment");
-    program.link();
 
     PolygonalMoulder polyMoulder = PolygonalMoulder();
     std::vector<glm::vec3> tri;
@@ -266,16 +333,6 @@ void RenderWidget::setupCPU(const std::vector<glm::vec3> &polyline)
 
 void RenderWidget::setupGPU(const std::vector<glm::vec3> &polyline)
 {
-    //Create the program
-    program.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/vertexshader_tess.glsl");
-    program.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/fragment");
-    program.addShaderFromSourceFile(QOpenGLShader::Geometry, ":/Shaders/geometry");
-    program.addShaderFromSourceFile(QOpenGLShader::TessellationEvaluation, ":/Shaders/TEShader.glsl");
-    program.addShaderFromSourceFile(QOpenGLShader::TessellationControl, ":/Shaders/TCShader.glsl");
-    program.link();
-
-    // default value of tesselation
-    numberOfTesselations = 4;
 
     //Setup the model.
     //Wrong: vertices should be the bezier control points
@@ -311,11 +368,6 @@ void RenderWidget::setupGPU(const std::vector<glm::vec3> &polyline)
 
 void RenderWidget::setupCPUAndGPU(const std::vector<glm::vec3> &polyline)
 {
-    //Create the program
-    program.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/vertexshader_tess.glsl");
-    program.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/fragment");
-    program.addShaderFromSourceFile(QOpenGLShader::Geometry, ":/Shaders/geometry");
-    program.link();
 
     //Setup the model.
     //Wrong: vertices should be the bezier control points
