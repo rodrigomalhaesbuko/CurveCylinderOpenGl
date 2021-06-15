@@ -33,7 +33,7 @@ in vec3 wireframeUVW;        //The texture coordinates
 
 void main()
 {
-      vec3 color = vec3(1.0, 0, 0);
+    vec3 color = vec3(1.0, 0, 0);
 //    vec3 diffuse = vec3(0, 0, 0);
 //    vec3 specular = vec3(0, 0, 0);
 //    vec3 ambient = material.ambient;
@@ -52,7 +52,7 @@ void main()
 
 //    color = ambient + diffuse + specular;
 
-    //Uncomment to render the normal color
+//    //Uncomment to render the normal color
 //    color = N;
 
     //Add wireframe combining the final color to the wireframe texture

@@ -27,22 +27,22 @@ PolygonalMoulder::PolygonalMoulder()
 // Funcao que cria o molde a partir de uma poligonal
 // Recebe a poligonal
 // Retorna uma lista de triangulos para serem renderizados
-std::vector<glm::vec3> PolygonalMoulder::createShape(std::vector<glm::vec3> poly, std::vector<glm::vec3> *tri , float radius, int numberOfPoints){
+std::vector<glm::vec3> PolygonalMoulder::createShape(std::vector<glm::vec3> poly, std::vector<glm::vec3> *tri , float radius, int numberOfPoints, int ni){
 
     // se interpola a curva por Bezier
-    std::vector<glm::vec3> polyInterpolated = bezierInterpolation(poly);
-    std::cout << "BIINTERPOLADO VALORES DE V" << std::endl;
-    printVector3(polyInterpolated);
+//    std::vector<glm::vec3> polyInterpolated = bezierInterpolation(poly);
+//    std::cout << "BIINTERPOLADO VALORES DE V" << std::endl;
+    //printVector3(polyInterpolated);
 
     // com a curva interpolada precisamos das posicoes e das tangentes
     std::vector<glm::vec3> pos, tan;
-    int ni = 4;
-    getPosAndTan(polyInterpolated, ni, &pos, &tan);
+    int subdivisions  = ni;
+    getPosAndTan(poly, subdivisions, &pos, &tan);
     std::cout << "pos" << std::endl;
-    printVector3(pos);
+    //printVector3(pos);
 
     std::cout << "tan" << std::endl;
-    printVector3(tan);
+    //printVector3(tan);
 
     // com as informações gera o conjunto de vertices da estrutura
     std::vector<glm::vec3> vertices;
@@ -79,10 +79,10 @@ std::vector<glm::vec3> PolygonalMoulder::createShape(std::vector<glm::vec3> poly
     }
 
     std::cout << "U" << std::endl;
-    printVector3(u);
+    //printVector3(u);
 
     std::cout << "V" << std::endl;
-    printVector3(v);
+    //printVector3(v);
 
     vertices = createVertices(pos, u, v, tan, radiusCircle, numberOfPointsInCircle);
 
@@ -90,10 +90,10 @@ std::vector<glm::vec3> PolygonalMoulder::createShape(std::vector<glm::vec3> poly
     *tri = createTriangles(numberOfPointsInCircle, tan.size());
 
     std::cout << "Vector" << std::endl;
-    printVector3(vertices);
+    //printVector3(vertices);
 
     std::cout << "Triangulo" << std::endl;
-    printVector3(*tri);
+    //printVector3(*tri);
 
 //    return polyInterpolated;
     //return pos;
@@ -105,17 +105,16 @@ std::vector<glm::vec3> PolygonalMoulder::createShape(std::vector<glm::vec3> poly
 // Funcao que cria o molde a partir de uma poligonal
 // Recebe a poligonal
 // Retorna uma lista de triangulos para serem renderizados
-std::vector<glm::vec3> PolygonalMoulder::getOnlyPos(std::vector<glm::vec3> poly,std::vector<glm::vec3> *tangent ){
+std::vector<glm::vec3> PolygonalMoulder::getOnlyPos(std::vector<glm::vec3> poly,std::vector<glm::vec3> *tangent, int ni ){
 
     // se interpola a curva por Bezier
-    std::vector<glm::vec3> polyInterpolated = bezierInterpolation(poly);
-    std::cout << "BIINTERPOLADO VALORES DE V" << std::endl;
-    printVector3(polyInterpolated);
+//    std::vector<glm::vec3> polyInterpolated = bezierInterpolation(poly);
+//    std::cout << "BIINTERPOLADO VALORES DE V" << std::endl;
 
     // com a curva interpolada precisamos das posicoes e das tangentes
     std::vector<glm::vec3> pos, tan;
-    int ni = 4;
-    getPosAndTan(polyInterpolated, ni, &pos, &tan);
+    int subdivions = ni;
+    getPosAndTan(poly, subdivions, &pos, &tan);
     *tangent = tan;
     return pos;
 }
@@ -124,7 +123,7 @@ void PolygonalMoulder::printVector3(std::vector<glm::vec3> v)
 {
     int tam = v.size();
     for(int i=0; i < tam; i++){
-        std::cout << "[ " << v[i].x << ", " << v[i].y << ", " <<  v[i].z <<  "]," << std::endl;
+        std::cout << "{ " << v[i].x << ", " << v[i].y << ", " <<  v[i].z <<  "}," << std::endl;
     }
 
 }
@@ -214,6 +213,8 @@ std::vector<glm::vec3> PolygonalMoulder::bezierInterpolation(std::vector<glm::ve
   for(int i=0; i < m; i++){
       v.push_back(glm::vec3(x0(i),x1(i),x2(i)));
   }
+
+ printVector3(v);
 
  return v;
 

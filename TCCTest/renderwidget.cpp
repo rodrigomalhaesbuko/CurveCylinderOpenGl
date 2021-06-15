@@ -41,15 +41,14 @@ void RenderWidget::mouseMoveEvent(QMouseEvent *event){
     if (arcBallEnable){
         glm::ivec2 newpoint =  {event -> x(), event -> y()};
         rotate(oldPoint,newpoint);
-        update();
+        //update();
         oldPoint = newpoint;
     }
-
 }
 void RenderWidget::wheelEvent(QWheelEvent *event){
         eyeBall += (centerBall - eyeBall) * 0.001f * event->delta();
         view = glm::lookAt(eyeBall,centerBall, upBall);
-        update();
+        //update();
 }
 
 void RenderWidget::keyPressEvent(QKeyEvent *event)
@@ -67,18 +66,36 @@ void RenderWidget::keyPressEvent(QKeyEvent *event)
 
     if(event->key() == Qt::Key_Up)
     {
+        numberOfTesselations++;
         if(gpu)
-            numberOfTesselations++;
-        if(cpuAndGpu)
-            numberOfPointsInCircle++;
+        {
+            setupGPU(polyline);
+        }
+        else if(cpuAndGpu){
+
+            setupCPUAndGPU(polyline);
+        }
+        else
+        {
+            setupCPU(polyline);
+        }
     }
 
     if(event->key() == Qt::Key_Down)
     {
+        numberOfTesselations--;
         if(gpu)
-            numberOfTesselations--;
-        if(cpuAndGpu)
-            numberOfPointsInCircle--;
+        {
+            setupGPU(polyline);
+        }
+        else if(cpuAndGpu){
+
+            setupCPUAndGPU(polyline);
+        }
+        else
+        {
+            setupCPU(polyline);
+        }
     }
 
     if(event->key() == Qt::Key_A)
@@ -86,31 +103,85 @@ void RenderWidget::keyPressEvent(QKeyEvent *event)
         animation = !animation;
     }
 
+    // Fazer poly mais complexa
+    if(event->key() == Qt::Key_Space)
+    {
+        glm::vec3 newpoint =  polyline[polyline.size()-1];
+        polyline.push_back(glm::vec3(newpoint.x + 20*glm::cos(newpoint.x),newpoint.y + 20*glm::sin(newpoint.y), newpoint.z -10));
+        if(gpu)
+        {
+            setupGPU(polyline);
+        }
+        else if(cpuAndGpu){
+
+            setupCPUAndGPU(polyline);
+        }
+        else
+        {
+            setupCPU(polyline);
+        }
+    }
+
+
 }
 
 
 void RenderWidget::ChangePoly(){
+    // Animation 1
     for( unsigned int i = 0; i < polyline.size(); i++)
     {
         if(i%2==0)
-            polyline[i].z = polyline[i].z + 1*glm::cos(bola);
-        else
-            polyline[i].z = polyline[i].z + -1*glm::cos(bola);
+            polyline[i].y = polyline[i].y + 1*glm::cos(angleAnimation);
+//        else
+//            polyline[i].x = polyline[i].x + -1*glm::cos(angleAnimation);
     }
-    bola += 3.1415f/80.0f;
+    angleAnimation += 3.1415f/80.0f;
 
+    // Animation 2
+//    if(animationIndex > currentTest.size() - 3){
+//        animationIndex = 4;
+//        std::vector<glm::vec3> new_poly;
+//        new_poly.push_back(currentTest[0]);
+//        new_poly.push_back(currentTest[1]);
+//        new_poly.push_back(currentTest[2]);
+//        new_poly.push_back(currentTest[3]);
+
+//        polyline = new_poly;
+//    }
+//    else {
+//        polyline.push_back(currentTest[animationIndex]);
+//        polyline.push_back(currentTest[animationIndex+1]);
+//        polyline.push_back(currentTest[animationIndex+2]);
+//        polyline.push_back(currentTest[animationIndex+3]);
+//        animationIndex+=4;
+//    }
+
+     //Animation 3
+//    if(animationIndex > polyline.size() - 1)
+//    {
+//        animationIndex = 0;
+//    }else {
+//        polyline[animationIndex].y = polyline[animationIndex].y - 10*glm::cos(angleAnimation);
+//        animationIndex++;
+//        polyline[animationIndex].y = polyline[animationIndex].y + 10*glm::cos(angleAnimation);
+//        animationIndex++;
+//    }
+//    angleAnimation += 3.1415f/80.0f;
     // re build the curve
+    PolygonalMoulder polyMoulder = PolygonalMoulder();
+    std::vector<glm::vec3> tri;
+    std::vector<glm::vec3> controlPoints = polyMoulder.bezierInterpolation(polyline);
     if(gpu)
     {
-        setupGPU(polyline);
+        setupGPU(controlPoints);
     }
     else if(cpuAndGpu){
 
-        setupCPUAndGPU(polyline);
+        setupCPUAndGPU(controlPoints);
     }
     else
     {
-        setupCPU(polyline);
+        setupCPU(controlPoints);
     }
 
 }
@@ -135,25 +206,39 @@ void RenderWidget::initializeGL()
     //Define a viewport
     glViewport(0,0, width(), height());
 
-    //Cria o modelo
 
-    polyline.push_back(glm::vec3(0, 0, 0));
-    polyline.push_back(glm::vec3(0, 0, -100));
-    polyline.push_back(glm::vec3(0, 13, -150));
-    polyline.push_back(glm::vec3(0, 50, -187));
-    polyline.push_back(glm::vec3(0, 100, -200));
-    polyline.push_back(glm::vec3(10, 120, -180));
-    polyline.push_back(glm::vec3(20, 50, -160));
-    polyline.push_back(glm::vec3(30, 20, -200));
-    polyline.push_back(glm::vec3(40, 13, -230));
+    // TESTES
+    currentTest = teste0;
+    //currentTest = teste1;
+    //currentTest = teste2;
 
+
+
+    // Descobrir pontos de controle da Bézier
+//    polyline.push_back(glm::vec3(0, 0, -100));
+//    polyline.push_back(glm::vec3(0, 13, -150));
+//    polyline.push_back(glm::vec3(0, 50, -187));
+//    polyline.push_back(glm::vec3(0, 100, -200));
+//    polyline.push_back(glm::vec3(10, 120, -180));
+//    polyline.push_back(glm::vec3(20, 50, -160));
+//    polyline.push_back(glm::vec3(30, 20, -200));
+//    polyline.push_back(glm::vec3(40, 13, -230));
+
+//    for( unsigned int i = 0; i < 200; i++)
+//    {
+//        glm::vec3 newpoint =  polyline[polyline.size()-1];
+//        polyline.push_back(glm::vec3(newpoint.x + 20*glm::cos(newpoint.x),newpoint.y + 20*glm::sin(newpoint.y), newpoint.z -10));
+//    }
+
+    polyline = currentTest;
+    animationIndex = polyline.size();
 
     // Cylinder control
     numberOfPointsInCircle = 10;
     radiusCircle = 10;
 
     // default value of tesselation
-    numberOfTesselations = 4;
+    numberOfTesselations = 10;
 
     // CPU FLOW
     //setupCPU(polyline);
@@ -212,11 +297,16 @@ void RenderWidget::initializeGL()
         program.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/fragment");
         program.link();
     }
+
+    frameTime.start();
 }
 
 
 void RenderWidget::paintGL()
 {
+
+
+
     //Habilita o teste de Z
     glEnable(GL_DEPTH_TEST);
 
@@ -270,6 +360,7 @@ void RenderWidget::paintGL()
     program.setUniformValue("mv", mv);
     program.setUniformValue("mv_ti", mv.inverted().transposed());
     program.setUniformValue("mvp", mvp);
+    program.setUniformValue("inv_p", p.inverted());
 
     //Desenhar
     if(gpu)
@@ -289,6 +380,30 @@ void RenderWidget::paintGL()
        ChangePoly();
     }
 
+
+    if(frameTime.elapsed() > elapsedTime) {
+       fps = frameCount;// FPS;
+       elapsedTime += 1000.0f;
+       frameCount = 0;
+    }
+    QPainter myText(this);
+    myText.drawText(QPoint(10,30), QString("FPS: ") + QString::number(fps));
+    myText.drawText(QPoint(10,50), QString("Tesselations: ") + QString::number(numberOfTesselations));
+    if(gpu)
+        myText.drawText(QPoint(10,70), QString("Triangles: ") + QString::number((vertices.size()/4*2*numberOfPointsInCircle)*numberOfTesselations));
+    else if(cpuAndGpu)
+        myText.drawText(QPoint(10,70), QString("Triangles: ") + QString::number(vertices.size()/2*(2*numberOfPointsInCircle)));
+    else
+        myText.drawText(QPoint(10,70), QString("Triangles: ") + QString::number(indices.size()/3));
+    frameCount++;
+    // END FPS COUNT
+
+    // call paitGl every frame
+    update();
+
+
+
+
 }
 
 
@@ -306,7 +421,7 @@ void RenderWidget::setupCPU(const std::vector<glm::vec3> &polyline)
 
     PolygonalMoulder polyMoulder = PolygonalMoulder();
     std::vector<glm::vec3> tri;
-    vertices = polyMoulder.createShape(polyline, &tri, radiusCircle, numberOfPointsInCircle);
+    vertices = polyMoulder.createShape(polyline, &tri, radiusCircle, numberOfPointsInCircle, numberOfTesselations);
 
     indices.clear();
     for(glm::vec3 t: tri)
@@ -336,9 +451,8 @@ void RenderWidget::setupGPU(const std::vector<glm::vec3> &polyline)
 
     //Setup the model.
     //Wrong: vertices should be the bezier control points
-    PolygonalMoulder polyMoulder = PolygonalMoulder();
-    vertices = polyMoulder.bezierInterpolation(polyline);
-
+    vertices = polyline;
+    //vertices = polyline;
     // BÉzier points
     std::vector<glm::vec3> new_vertices;
     // Esse algoritimo pega os pontos da Bézier gerados pelo polygon moulder e cola uma bézier na outra
@@ -373,16 +487,21 @@ void RenderWidget::setupCPUAndGPU(const std::vector<glm::vec3> &polyline)
     //Wrong: vertices should be the bezier control points
     PolygonalMoulder polyMoulder = PolygonalMoulder();
     std::vector<glm::vec3> tan;
-    vertices = polyMoulder.getOnlyPos(polyline, &tan);
+    vertices = polyMoulder.getOnlyPos(polyline, &tan, numberOfTesselations);
 
     //USING POS
     std::vector<glm::vec3> new_vertices;
-    for(unsigned int i = 0; i < vertices.size() - 3; ++i)
+    for(unsigned int i = 0; i < vertices.size() - 1; ++i)
     {
         new_vertices.push_back(vertices[i+0]);
         new_vertices.push_back(vertices[i+1]);
-        new_vertices.push_back(vertices[i+2]);
-        new_vertices.push_back(vertices[i+3]);
+    }
+
+    std::vector<glm::vec3> new_tan;
+    for(unsigned int i = 0; i < vertices.size() - 1; ++i)
+    {
+        new_tan.push_back(tan[i+0]);
+        new_tan.push_back(tan[i+1]);
     }
 
     vertices = new_vertices;
@@ -392,7 +511,7 @@ void RenderWidget::setupCPUAndGPU(const std::vector<glm::vec3> &polyline)
 
     //Not using. Erase.
     texCoords = std::vector<glm::vec2>(vertices.size());
-    tangentes = tan;
+    tangentes = new_tan;
 
     //Setup VBO and VAO.
     createVBO();

@@ -2,9 +2,9 @@
 
 layout( isolines, equal_spacing, ccw) in;
 
-
 out vec3 fColor;
 out vec4 tan;
+
 void main()
 {
     vec4 p0 = gl_in[0].gl_Position;

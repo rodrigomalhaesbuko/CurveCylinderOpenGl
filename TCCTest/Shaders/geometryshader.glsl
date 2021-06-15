@@ -14,9 +14,13 @@ in vec4 tan[];
 
 out vec3 fColor;
 out vec3 wireframeUVW;
+out vec3 gNormal;
+out vec3 gLightDir;
 
 uniform int numberOfPointsInCircle;
+uniform mat4 inv_p;
 uniform float radiusCircle;
+uniform mat4 mv;
 
 vec4 quat_from_axis_angle(vec3 axis, float angle)
 {
@@ -56,8 +60,19 @@ vec3 rotate_vertex_position(vec3 position, vec3 axis, float angle)
   return vec3(qr.x, qr.y, qr.z);
 }
 
+void createTriangleVert(int k, vec4 pos){
 
-void drawCircle(vec4 actual_Point, vec4 nextPoint, float radius){
+    gl_Position = myValues[k];
+    vec3 lpos = vec3(0, 0, 0);
+    //luz
+    vec3 peye = vec3( inv_p * pos);
+    gLightDir = normalize(-peye); // luz na posicao do olho
+    gNormal = normalize(vec3(myValues[k] - pos));
+    EmitVertex();
+}
+
+
+void drawCircle(vec4 currentPoint, vec4 nextPoint, float radius){
     float angle = 0;
     int numberOfPointsInCircle = numberOfPointsInCircle;
     float raio = radius;
@@ -70,14 +85,14 @@ void drawCircle(vec4 actual_Point, vec4 nextPoint, float radius){
         float u = raio*cos(angle);
         float v = raio*sin(angle);
         float t = 0.f;
-        myValues[i] =  actual_Point + vec4(u,v,t,1.0f);
+        myValues[i] =  currentPoint + vec4(u,v,t,1.0f);
         myValues[numberOfPointsInCircle + i] =  nextPoint + vec4(u,v,t,1.0f);
         angle = angle + 2.0f*pi/(float(numberOfPointsInCircle));
 
         // Rotation
         if(rotation){
             vec3 aux = u*uEixo[0] + v*k[0] + t*vec3(tan[0]);
-            myValues[i] = actual_Point + vec4(aux, 1.0f);
+            myValues[i] = currentPoint + vec4(aux, 1.0f);
             vec3 aux2 = u*uEixo[1] + v*k[1] + t*vec3(tan[1]);
             myValues[numberOfPointsInCircle + i] = nextPoint + vec4(aux2, 1.0f);
         }
@@ -102,36 +117,33 @@ void drawCircle(vec4 actual_Point, vec4 nextPoint, float radius){
     for(int i = 0; i< numberOfPointsInCircle; i++){
         int k = i;
         int k1 = (i + 1)%numberOfPointsInCircle;
-        gl_Position = myValues[k];
+
+
         fColor = vec3(1.0f, 1.0f, 0.0f);
         wireframeUVW = vec3(1.0, 1.0, 0.0);
-        EmitVertex();
+        createTriangleVert(k, currentPoint);
 
-        gl_Position = myValues[k1];
+
         fColor = vec3(1.0f, 1.0f, 0.0f);
         wireframeUVW = vec3(0.0, 1.0, 1.0);
-        EmitVertex();
+        createTriangleVert(k1, currentPoint);
 
-        gl_Position = myValues[k1 + numberOfPointsInCircle];
         fColor = vec3(1.0f, 1.0f, 0.0f);
         wireframeUVW = vec3(1.0, 0.0, 1.0);
-        EmitVertex();
+        createTriangleVert(k1 + numberOfPointsInCircle, currentPoint);
         EndPrimitive();
 
-        gl_Position = myValues[k];
         fColor = vec3(1.0f, 0.0f, 0.0f);
         wireframeUVW = vec3(1.0, 1.0, 0.0);
-        EmitVertex();
+        createTriangleVert(k, nextPoint);
 
-        gl_Position = myValues[k1 + numberOfPointsInCircle];
         fColor = vec3(1.0f, 0.0f, 0.0f);
         wireframeUVW = vec3(0.0, 1.0, 1.0);
-        EmitVertex();
+        createTriangleVert(k1 + numberOfPointsInCircle, nextPoint);
 
-        gl_Position = myValues[k + numberOfPointsInCircle];
         fColor = vec3(1.0f, 0.0f, 0.0f);
         wireframeUVW = vec3(1.0, 0.0, 1.0);
-        EmitVertex();
+        createTriangleVert(k + numberOfPointsInCircle, nextPoint);
         EndPrimitive();
 
 //        for(int j = 0; j< numberOfCircles-1; j++){
@@ -148,6 +160,8 @@ void drawCircle(vec4 actual_Point, vec4 nextPoint, float radius){
 }
 
 
+
+
 void main() {
     // Rotation
     //float angle = glm::acos(t0[0]*t1[0]+t0[1]*t1[1]+t0[2]*t1[2]);
@@ -159,17 +173,22 @@ void main() {
 //    glm::quat quat_v1  = quat_rot*quat_v0*glm::conjugate(quat_rot);
 //    *v1 = glm::vec3(quat_v1.x, quat_v1.y, quat_v1.z);
 
-    vec3 u_ = vec3(1, 0 ,0 );
-    vec3 t0 = vec3(tan[0]);
-    vec3 t1 = vec3(tan[1]);
-    vec3 v0 = normalize(cross(t0,u_));
-    vec3 u0 = cross(v0,t0);
-    vec3 eixo = cross(t0,t1);
-    eixo = normalize(eixo);
-    uEixo[0] = u0;
-    k[0] = v0;
+    if(rotation){
+        vec3 u_ = vec3(1, 0 ,0 );
+        vec3 t0 = vec3(tan[0]);
+        vec3 t1 = vec3(tan[1]);
+        vec3 v0 = normalize(cross(t0,u_));
+        vec3 u0 = cross(v0,t0);
+        vec3 eixo = cross(t0,t1);
+        eixo = normalize(eixo);
+        uEixo[0] = u0;
+        k[0] = v0;
 
-    float angle = acos(t0.x*t1.x+t0.y*t1.y+t0.z*t1.z);
+        float angle = acos(t0.x*t1.x+t0.y*t1.y+t0.z*t1.z);
+
+        uEixo[1] = rotate_vertex_position(uEixo[0], eixo, angle);
+        k[1] = rotate_vertex_position(k[0], eixo, angle);
+    }
 
 //    vec4 quat_rot = quat_from_axis_angle(sin(angle/2)*eixo, cos(angle/2));
 //    vec4 quat_u0 = quat_from_axis_angle(u0, 0.0f);
@@ -179,10 +198,16 @@ void main() {
 //    vec4 quat_v1 = quat_rot*quat_v0*quat_conj(quat_rot);
 //    k[1] = vec3(quat_v1.x,quat_v1.y,quat_v1.z);
 
-    uEixo[1] = rotate_vertex_position(uEixo[0], eixo, angle);
-    k[1] = rotate_vertex_position(k[0], eixo, angle);
+
 
     drawCircle(gl_in[0].gl_Position, gl_in[1].gl_Position, radiusCircle);
+
+    //show only interpoleted curve by Tesselation
+//    gl_Position = gl_in[0].gl_Position;
+//    EmitVertex();
+//    gl_Position = gl_in[1].gl_Position;
+//    EmitVertex();
+//    EndPrimitive();
 }
 
 
