@@ -67,35 +67,11 @@ void RenderWidget::keyPressEvent(QKeyEvent *event)
     if(event->key() == Qt::Key_Up)
     {
         numberOfTesselations++;
-        if(gpu)
-        {
-            setupGPU(polyline);
-        }
-        else if(cpuAndGpu){
-
-            setupCPUAndGPU(polyline);
-        }
-        else
-        {
-            setupCPU(polyline);
-        }
     }
 
     if(event->key() == Qt::Key_Down)
     {
         numberOfTesselations--;
-        if(gpu)
-        {
-            setupGPU(polyline);
-        }
-        else if(cpuAndGpu){
-
-            setupCPUAndGPU(polyline);
-        }
-        else
-        {
-            setupCPU(polyline);
-        }
     }
 
     if(event->key() == Qt::Key_A)
@@ -108,18 +84,56 @@ void RenderWidget::keyPressEvent(QKeyEvent *event)
     {
         glm::vec3 newpoint =  polyline[polyline.size()-1];
         polyline.push_back(glm::vec3(newpoint.x + 20*glm::cos(newpoint.x),newpoint.y + 20*glm::sin(newpoint.y), newpoint.z -10));
-        if(gpu)
-        {
-            setupGPU(polyline);
-        }
-        else if(cpuAndGpu){
+    }
 
-            setupCPUAndGPU(polyline);
-        }
-        else
-        {
-            setupCPU(polyline);
-        }
+    if(event->key() == Qt::Key_1)
+    {
+        gpu = false;
+        cpuAndGpu = false;
+        program.removeAllShaders();
+        program.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/vertex");
+        program.addShaderFromSourceFile(QOpenGLShader::Geometry, ":/Shaders/geometry-cpu");
+        program.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/fragment");
+        program.link();
+    }
+
+    if(event->key() == Qt::Key_2)
+    {
+        gpu = false;
+        cpuAndGpu = true;
+        program.removeAllShaders();
+        program.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/vertexshader_tess.glsl");
+        program.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/fragment");
+        program.addShaderFromSourceFile(QOpenGLShader::Geometry, ":/Shaders/geometry");
+        program.link();
+    }
+
+
+    if(event->key() == Qt::Key_3)
+    {
+        gpu = true;
+        cpuAndGpu = false;
+        program.removeAllShaders();
+        //Create the program
+        program.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/vertexshader_tess.glsl");
+        program.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/fragment");
+        program.addShaderFromSourceFile(QOpenGLShader::Geometry, ":/Shaders/geometry");
+        program.addShaderFromSourceFile(QOpenGLShader::TessellationEvaluation, ":/Shaders/TEShader.glsl");
+        program.addShaderFromSourceFile(QOpenGLShader::TessellationControl, ":/Shaders/TCShader.glsl");
+        program.link();
+    }
+
+    if(gpu)
+    {
+        setupGPU(polyline);
+    }
+    else if(cpuAndGpu){
+
+        setupCPUAndGPU(polyline);
+    }
+    else
+    {
+        setupCPU(polyline);
     }
 
 
@@ -128,14 +142,14 @@ void RenderWidget::keyPressEvent(QKeyEvent *event)
 
 void RenderWidget::ChangePoly(){
     // Animation 1
-    for( unsigned int i = 0; i < polyline.size(); i++)
-    {
-        if(i%2==0)
-            polyline[i].y = polyline[i].y + 1*glm::cos(angleAnimation);
-//        else
-//            polyline[i].x = polyline[i].x + -1*glm::cos(angleAnimation);
-    }
-    angleAnimation += 3.1415f/80.0f;
+//    for( unsigned int i = 0; i < polyline.size(); i++)
+//    {
+//        if(i%2==0)
+//            polyline[i].y = polyline[i].y + 0.5*glm::cos(angleAnimation);
+////        else
+////            polyline[i].x = polyline[i].x + -1*glm::cos(angleAnimation);
+//    }
+//    angleAnimation += 3.1415f/80.0f;
 
     // Animation 2
 //    if(animationIndex > currentTest.size() - 3){
@@ -168,20 +182,20 @@ void RenderWidget::ChangePoly(){
 //    }
 //    angleAnimation += 3.1415f/80.0f;
     // re build the curve
-    PolygonalMoulder polyMoulder = PolygonalMoulder();
-    std::vector<glm::vec3> tri;
-    std::vector<glm::vec3> controlPoints = polyMoulder.bezierInterpolation(polyline);
+//    PolygonalMoulder polyMoulder = PolygonalMoulder();
+//    std::vector<glm::vec3> tri;
+//    std::vector<glm::vec3> controlPoints = polyMoulder.bezierInterpolation(polyline);
     if(gpu)
     {
-        setupGPU(controlPoints);
+        setupGPU(polyline);
     }
     else if(cpuAndGpu){
 
-        setupCPUAndGPU(controlPoints);
+        setupCPUAndGPU(polyline);
     }
     else
     {
-        setupCPU(controlPoints);
+        setupCPU(polyline);
     }
 
 }
@@ -208,44 +222,58 @@ void RenderWidget::initializeGL()
 
 
     // TESTES
-    currentTest = teste0;
+    currentTest = tccTeste;
+    //currentTest = teste0;
     //currentTest = teste1;
     //currentTest = teste2;
 
 
 
-    // Descobrir pontos de controle da Bézier
+//    // Descobrir pontos de controle da Bézier
 //    polyline.push_back(glm::vec3(0, 0, -100));
-//    polyline.push_back(glm::vec3(0, 13, -150));
-//    polyline.push_back(glm::vec3(0, 50, -187));
-//    polyline.push_back(glm::vec3(0, 100, -200));
-//    polyline.push_back(glm::vec3(10, 120, -180));
-//    polyline.push_back(glm::vec3(20, 50, -160));
-//    polyline.push_back(glm::vec3(30, 20, -200));
-//    polyline.push_back(glm::vec3(40, 13, -230));
+//    polyline.push_back(glm::vec3(0, 20, -150));
+////    polyline.push_back(glm::vec3(0, 50, -187));
+////    polyline.push_back(glm::vec3(0, 100, -200));
+////    polyline.push_back(glm::vec3(10, 120, -180));
+////    polyline.push_back(glm::vec3(20, 50, -160));
+////    polyline.push_back(glm::vec3(30, 20, -200));
+////    polyline.push_back(glm::vec3(40, 13, -230));
 
-//    for( unsigned int i = 0; i < 200; i++)
+//    for( unsigned int i = 0; i < 20; i++)
 //    {
 //        glm::vec3 newpoint =  polyline[polyline.size()-1];
-//        polyline.push_back(glm::vec3(newpoint.x + 20*glm::cos(newpoint.x),newpoint.y + 20*glm::sin(newpoint.y), newpoint.z -10));
+//        polyline.push_back(glm::vec3(newpoint.x + 10, newpoint.y + 30, newpoint.z));
+//        newpoint =  polyline[polyline.size()-1];
+//        polyline.push_back(glm::vec3(newpoint.x + 10, newpoint.y + 30, newpoint.z - 30));
+//        newpoint =  polyline[polyline.size()-1];
+//        polyline.push_back(glm::vec3(newpoint.x + 10, newpoint.y  - 30, newpoint.z - 30));
+//        newpoint =  polyline[polyline.size()-1];
+//        polyline.push_back(glm::vec3(newpoint.x + 10, newpoint.y  - 30, newpoint.z + 30));
+//        newpoint =  polyline[polyline.size()-1];
+//        polyline.push_back(glm::vec3(newpoint.x, newpoint.y, newpoint.z + 20));
 //    }
+
+//    PolygonalMoulder polyMoulder = PolygonalMoulder();
+//    std::vector<glm::vec3> debugPointsBezier = polyMoulder.bezierInterpolation(polyline);
 
     polyline = currentTest;
     animationIndex = polyline.size();
 
+    std::cout << polyline.size() << std::endl;
+
     // Cylinder control
-    numberOfPointsInCircle = 10;
+    numberOfPointsInCircle = 16;
     radiusCircle = 10;
 
     // default value of tesselation
     numberOfTesselations = 10;
 
     // CPU FLOW
-    //setupCPU(polyline);
+    setupCPU(polyline);
     // CPU + GEOMETRY FLOW
     //setupCPUAndGPU(polyline);
     // CPU + TESSELATION + GEOMETRY FLOW
-    setupGPU(polyline);
+    //setupGPU(polyline);
 
     //wireframe
     wireframeON = true;
@@ -382,28 +410,40 @@ void RenderWidget::paintGL()
 
 
     if(frameTime.elapsed() > elapsedTime) {
-       fps = frameCount;// FPS;
+       //fps = frameCount;// FPS;
        elapsedTime += 1000.0f;
+       fps = frameCount;
        frameCount = 0;
     }
+    if(frameTime.elapsed() > 1000.0f){
+       averageFps = totalFrameCount / (float(frameTime.elapsed()) / 1000.0f);
+    }
+
+    // DISPLAY
     QPainter myText(this);
-    myText.drawText(QPoint(10,30), QString("FPS: ") + QString::number(fps));
-    myText.drawText(QPoint(10,50), QString("Tesselations: ") + QString::number(numberOfTesselations));
+    myText.drawText(QPoint(10,50), QString("FPS: ") + QString::number(fps));
+    myText.drawText(QPoint(10,70), QString("averageFPS: ") + QString::number(averageFps));
+    myText.drawText(QPoint(10,90), QString("Tesselations: ") + QString::number(numberOfTesselations));
     if(gpu)
-        myText.drawText(QPoint(10,70), QString("Triangles: ") + QString::number((vertices.size()/4*2*numberOfPointsInCircle)*numberOfTesselations));
+    {
+        myText.drawText(QPoint(10,30),"Solução 3");
+        myText.drawText(QPoint(10,110), QString("Triangles: ") + QString::number((vertices.size()/4*2*numberOfPointsInCircle)*numberOfTesselations));
+    }
     else if(cpuAndGpu)
-        myText.drawText(QPoint(10,70), QString("Triangles: ") + QString::number(vertices.size()/2*(2*numberOfPointsInCircle)));
-    else
-        myText.drawText(QPoint(10,70), QString("Triangles: ") + QString::number(indices.size()/3));
+    {
+        myText.drawText(QPoint(10,30),"Solução 2");
+        myText.drawText(QPoint(10,110), QString("Triangles: ") + QString::number(vertices.size()/2*(2*numberOfPointsInCircle)));
+    }
+    else{
+        myText.drawText(QPoint(10,30),"Solução Padrão");
+        myText.drawText(QPoint(10,110), QString("Triangles: ") + QString::number(indices.size()/3));
+    }
     frameCount++;
+    totalFrameCount++;
     // END FPS COUNT
 
     // call paitGl every frame
     update();
-
-
-
-
 }
 
 

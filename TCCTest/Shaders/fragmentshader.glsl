@@ -34,9 +34,9 @@ in vec3 wireframeUVW;        //The texture coordinates
 void main()
 {
     vec3 color = vec3(1.0, 0, 0);
-//    vec3 diffuse = vec3(0, 0, 0);
-//    vec3 specular = vec3(0, 0, 0);
-//    vec3 ambient = material.ambient;
+    vec3 diffuse = vec3(0, 0, 0);
+    vec3 specular = vec3(0, 0, 0);
+    vec3 ambient = material.ambient;
 
 //    vec3 N = normalize(gNormal);
 //    vec3 L = normalize(gLightDir);

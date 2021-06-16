@@ -1,6 +1,7 @@
 #version 400 core
 layout (lines) in;
 layout (triangle_strip, max_vertices = 1000) out;
+//layout(invocations = 2) in;
 
 vec4 myValues[1000];
 int lastPrimitiveIn;
@@ -75,7 +76,7 @@ void createTriangleVert(int k, vec4 pos){
 void drawCircle(vec4 currentPoint, vec4 nextPoint, float radius){
     float angle = 0;
     int numberOfPointsInCircle = numberOfPointsInCircle;
-    float raio = radius;
+    float raio = 2*radius;
     //        std::vector<glm::vec3> R;
     //        R.push_back(glm::vec3(ui[0],ui[1],ui[2]));
     //        R.push_back(glm::vec3(vi[0],vi[1],vi[2]));
@@ -188,19 +189,25 @@ void main() {
 
         uEixo[1] = rotate_vertex_position(uEixo[0], eixo, angle);
         k[1] = rotate_vertex_position(k[0], eixo, angle);
+
+        //    vec4 quat_rot = quat_from_axis_angle(sin(angle/2)*eixo, cos(angle/2));
+        //    vec4 quat_u0 = quat_from_axis_angle(u0, 0.0f);
+        //    vec4 quat_v0 = quat_from_axis_angle(v0, 0.0f);
+        //    vec4 quat_u1 = quat_rot*quat_u0*quat_conj(quat_rot);
+        //    uEixo[1] = vec3(quat_u1.x,quat_u1.y,quat_u1.z);
+        //    vec4 quat_v1 = quat_rot*quat_v0*quat_conj(quat_rot);
+        //    k[1] = vec3(quat_v1.x,quat_v1.y,quat_v1.z);
     }
 
-//    vec4 quat_rot = quat_from_axis_angle(sin(angle/2)*eixo, cos(angle/2));
-//    vec4 quat_u0 = quat_from_axis_angle(u0, 0.0f);
-//    vec4 quat_v0 = quat_from_axis_angle(v0, 0.0f);
-//    vec4 quat_u1 = quat_rot*quat_u0*quat_conj(quat_rot);
-//    uEixo[1] = vec3(quat_u1.x,quat_u1.y,quat_u1.z);
-//    vec4 quat_v1 = quat_rot*quat_v0*quat_conj(quat_rot);
-//    k[1] = vec3(quat_v1.x,quat_v1.y,quat_v1.z);
 
 
 
-    drawCircle(gl_in[0].gl_Position, gl_in[1].gl_Position, radiusCircle);
+//   if( gl_InvocationID == 1){
+//      drawCircle(gl_in[0].gl_Position, gl_in[1].gl_Position, radiusCircle);
+//   }
+
+   drawCircle(gl_in[0].gl_Position, gl_in[1].gl_Position, radiusCircle);
+
 
     //show only interpoleted curve by Tesselation
 //    gl_Position = gl_in[0].gl_Position;

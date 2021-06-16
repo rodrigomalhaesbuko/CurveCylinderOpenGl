@@ -34,12 +34,14 @@ std::vector<glm::vec3> PolygonalMoulder::createShape(std::vector<glm::vec3> poly
 //    std::cout << "BIINTERPOLADO VALORES DE V" << std::endl;
     //printVector3(polyInterpolated);
 
+    //printVector3(poly);
+
     // com a curva interpolada precisamos das posicoes e das tangentes
     std::vector<glm::vec3> pos, tan;
     int subdivisions  = ni;
     getPosAndTan(poly, subdivisions, &pos, &tan);
     std::cout << "pos" << std::endl;
-    //printVector3(pos);
+
 
     std::cout << "tan" << std::endl;
     //printVector3(tan);
@@ -123,7 +125,7 @@ void PolygonalMoulder::printVector3(std::vector<glm::vec3> v)
 {
     int tam = v.size();
     for(int i=0; i < tam; i++){
-        std::cout << "{ " << v[i].x << ", " << v[i].y << ", " <<  v[i].z <<  "}," << std::endl;
+        std::cout << "{" << v[i].x << ", " << v[i].y << ", " <<  v[i].z <<  "}," << std::endl;
     }
 
 }
