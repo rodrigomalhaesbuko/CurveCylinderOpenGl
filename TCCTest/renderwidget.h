@@ -40,6 +40,15 @@ private:
     void setupGPU(const std::vector<glm::vec3> &polyline);
     void ChangePoly();
 
+    //estrutura vbo
+    struct vertex
+    {
+        glm::vec3 pos;
+        glm::vec3 normal;
+        glm::vec2 texCoord;
+        glm::vec3 tangent;
+    };
+
 
     //ArcBall
     int radius;
@@ -1111,6 +1120,7 @@ private:
     void createSphere();
     void createPoly();
     void createVBO();
+    void updateVBO();
     void createTexture(const std::string& imagePath);
 
     void computeNormals();

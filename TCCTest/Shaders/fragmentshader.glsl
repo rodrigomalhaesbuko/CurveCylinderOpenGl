@@ -22,8 +22,10 @@ in vec3 FragColor;
 in vec3 gNormal;
 in vec3 gLightDir;
 in vec2 fragUV;
+uniform vec3 viewer;
 uniform sampler2D sampler;
 out vec3 finalColor;
+uniform int numberOfTesselations;
 
 
 //Wireframe data
@@ -38,22 +40,30 @@ void main()
     vec3 specular = vec3(0, 0, 0);
     vec3 ambient = material.ambient;
 
-//    vec3 N = normalize(gNormal);
-//    vec3 L = normalize(gLightDir);
 
-//    float iDif = abs(dot(N, L));
+    if(numberOfTesselations < 5){
+//        vec3 N = normalize(gNormal);
+//        vec3 L = normalize(gLightDir);
 
-//    if(iDif > 0)
-//    {
-//        diffuse = iDif * material.diffuse;
+//        float iDif = abs(dot(N, L));
+//        float iSpec = 0;
+//        vec3 R = vec3(0.0,0.0,0.0);
 
-//        //@todo: Compute specular
-//    }
+//        if(iDif > 0)
+//        {
+//            diffuse = iDif * material.diffuse;
+//            //R = normalize(reflect(-L, N));
+//            //iSpec = pow(max(dot(viewer,R),0.0), material.shininess);
+//            //@todo: Compute specular
+//        }
 
-//    color = ambient + diffuse + specular;
+//        specular = iSpec * material.specular;
 
-//    //Uncomment to render the normal color
-//    color = N;
+//        color = (ambient + diffuse + specular)*color;
+
+//        //Uncomment to render the normal color
+//        //color = N;
+    }
 
     //Add wireframe combining the final color to the wireframe texture
     vec3 wireframeColor = vec3(1, 1, 1);

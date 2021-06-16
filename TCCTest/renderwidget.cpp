@@ -123,6 +123,12 @@ void RenderWidget::keyPressEvent(QKeyEvent *event)
         program.link();
     }
 
+    if(event->key() == Qt::Key_0)
+    {
+        totalFrameCount = 0;
+        frameTime.restart();
+    }
+
     if(gpu)
     {
         setupGPU(polyline);
@@ -142,14 +148,14 @@ void RenderWidget::keyPressEvent(QKeyEvent *event)
 
 void RenderWidget::ChangePoly(){
     // Animation 1
-//    for( unsigned int i = 0; i < polyline.size(); i++)
-//    {
-//        if(i%2==0)
-//            polyline[i].y = polyline[i].y + 0.5*glm::cos(angleAnimation);
-////        else
-////            polyline[i].x = polyline[i].x + -1*glm::cos(angleAnimation);
-//    }
-//    angleAnimation += 3.1415f/80.0f;
+    for( unsigned int i = 0; i < polyline.size(); i++)
+    {
+        if(i%2==0)
+            polyline[i].y = polyline[i].y + 0.5*glm::cos(angleAnimation);
+//        else
+//            polyline[i].x = polyline[i].x + -1*glm::cos(angleAnimation);
+    }
+    angleAnimation += 3.1415f/80.0f;
 
     // Animation 2
 //    if(animationIndex > currentTest.size() - 3){
@@ -259,24 +265,30 @@ void RenderWidget::initializeGL()
     polyline = currentTest;
     animationIndex = polyline.size();
 
-    std::cout << polyline.size() << std::endl;
+//    std::cout << polyline.size() << std::endl;
 
     // Cylinder control
     numberOfPointsInCircle = 16;
     radiusCircle = 10;
 
     // default value of tesselation
-    numberOfTesselations = 10;
+    numberOfTesselations = 4;
+
+    //CRIAR VBO
+    createVBO();
 
     // CPU FLOW
-    setupCPU(polyline);
+    //setupCPU(polyline);
     // CPU + GEOMETRY FLOW
     //setupCPUAndGPU(polyline);
     // CPU + TESSELATION + GEOMETRY FLOW
-    //setupGPU(polyline);
+    setupGPU(polyline);
 
     //wireframe
     wireframeON = true;
+
+    //animation
+    animation = true;
 
     glm::vec3 eye(0,0,100);
     glm::vec3 verticesMedia;
@@ -478,7 +490,7 @@ void RenderWidget::setupCPU(const std::vector<glm::vec3> &polyline)
     tangentes = std::vector<glm::vec3>(vertices.size());
 
     //Setup VBO and VAO.
-    createVBO();
+    updateVBO();
 
     //Set gpu mode off
     gpu = false;
@@ -514,7 +526,7 @@ void RenderWidget::setupGPU(const std::vector<glm::vec3> &polyline)
     tangentes = std::vector<glm::vec3>(vertices.size());
 
     //Setup VBO and VAO.
-    createVBO();
+    updateVBO();
 
     //Set gpu mode on
     gpu = true;
@@ -554,7 +566,7 @@ void RenderWidget::setupCPUAndGPU(const std::vector<glm::vec3> &polyline)
     tangentes = new_tan;
 
     //Setup VBO and VAO.
-    createVBO();
+    updateVBO();
 
     //Set gpu mode on
     cpuAndGpu = true;
@@ -591,59 +603,60 @@ void RenderWidget::rotate(glm::ivec2 p1, glm::ivec2 p2)
 
 void RenderWidget::createVBO()
 {
-    //Construir vetor do vbo
-    //OBS: Os dados já poderiam estar sendo armazenados assim na classe.
-    struct vertex
-    {
-        glm::vec3 pos;
-        glm::vec3 normal;
-        glm::vec2 texCoord;
-        glm::vec3 tangent;
-    };
+    //createvbo
+    glGenBuffers(1, &VBO);
+        glGenBuffers(1, &EBO);
+        glGenVertexArrays(1, &VAO);
+        glBindVertexArray(VAO);
+        struct vertex
+        {
+            glm::vec3 pos;
+            glm::vec3 normal;
+            glm::vec2 texCoord;
+            glm::vec3 tangent;
+        };
+        //Habilitar, linkar e definir o layout dos buffers
+        glBindBuffer( GL_ARRAY_BUFFER, VBO );
+        glEnableVertexAttribArray( 0 );
+        glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE,
+                               sizeof(vertex),
+                               (void*)0 );
+        glEnableVertexAttribArray( 1 );
+        glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE,
+                               sizeof(vertex),
+                               (void*)sizeof(glm::vec3) );
+        glEnableVertexAttribArray( 2 );
+        glVertexAttribPointer( 2, 2, GL_FLOAT, GL_FALSE,
+                               sizeof(vertex),
+                               (void*)(2*sizeof(glm::vec3)) );
+        glEnableVertexAttribArray( 3 );
+        glVertexAttribPointer( 3, 3, GL_FLOAT, GL_FALSE,
+                               sizeof(vertex),
+                               (void*)(sizeof(glm::vec3)) );
+        glEnableVertexAttribArray( 4 );
+        glVertexAttribPointer( 4, 3, GL_FLOAT, GL_FALSE,
+                               sizeof(vertex),
+                               (void*)(sizeof(glm::vec3)) );
+        //Linkar o EBO
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    //
+}
 
+void RenderWidget::updateVBO()
+{
     std::vector< vertex > vbo;
     vbo.reserve( vertices.size() );
     for( unsigned int i = 0; i < vertices.size(); i++ )
     {
         vbo.push_back({vertices[i], normals[i], texCoords[i], tangentes[i]});
     }
-
     //Criar VBO, linkar e copiar os dados
-    glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, vbo.size()*sizeof(vertex), vbo.data(), GL_STATIC_DRAW);
     //Criar EBO, linkar e copiar os dados
-    glGenBuffers(1, &EBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,
                  indices.size()*sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
-    //Criar VAO, linkar e definir layouts
-    glGenVertexArrays(1, &VAO);
-    glBindVertexArray(VAO);
-    //Habilitar, linkar e definir o layout dos buffers
-    glBindBuffer( GL_ARRAY_BUFFER, VBO );
-    glEnableVertexAttribArray( 0 );
-    glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE,
-                           sizeof(vertex),
-                           (void*)0 );
-    glEnableVertexAttribArray( 1 );
-    glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE,
-                           sizeof(vertex),
-                           (void*)sizeof(glm::vec3) );
-    glEnableVertexAttribArray( 2 );
-    glVertexAttribPointer( 2, 2, GL_FLOAT, GL_FALSE,
-                           sizeof(vertex),
-                           (void*)(2*sizeof(glm::vec3)) );
-    glEnableVertexAttribArray( 3 );
-    glVertexAttribPointer( 3, 3, GL_FLOAT, GL_FALSE,
-                           sizeof(vertex),
-                           (void*)(sizeof(glm::vec3)) );
-    glEnableVertexAttribArray( 4 );
-    glVertexAttribPointer( 4, 3, GL_FLOAT, GL_FALSE,
-                           sizeof(vertex),
-                           (void*)(sizeof(glm::vec3)) );
-    //Linkar o EBO
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 }
 
 

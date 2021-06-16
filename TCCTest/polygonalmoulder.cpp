@@ -40,10 +40,9 @@ std::vector<glm::vec3> PolygonalMoulder::createShape(std::vector<glm::vec3> poly
     std::vector<glm::vec3> pos, tan;
     int subdivisions  = ni;
     getPosAndTan(poly, subdivisions, &pos, &tan);
-    std::cout << "pos" << std::endl;
+//    std::cout << "pos" << std::endl;
 
-
-    std::cout << "tan" << std::endl;
+//    std::cout << "tan" << std::endl;
     //printVector3(tan);
 
     // com as informações gera o conjunto de vertices da estrutura
@@ -80,10 +79,10 @@ std::vector<glm::vec3> PolygonalMoulder::createShape(std::vector<glm::vec3> poly
         v.push_back(vi);
     }
 
-    std::cout << "U" << std::endl;
-    //printVector3(u);
+//    std::cout << "U" << std::endl;
+//    //printVector3(u);
 
-    std::cout << "V" << std::endl;
+//    std::cout << "V" << std::endl;
     //printVector3(v);
 
     vertices = createVertices(pos, u, v, tan, radiusCircle, numberOfPointsInCircle);
@@ -91,10 +90,10 @@ std::vector<glm::vec3> PolygonalMoulder::createShape(std::vector<glm::vec3> poly
     // realiza o mapeamento para a malha de triangulos
     *tri = createTriangles(numberOfPointsInCircle, tan.size());
 
-    std::cout << "Vector" << std::endl;
-    //printVector3(vertices);
+//    std::cout << "Vector" << std::endl;
+//    //printVector3(vertices);
 
-    std::cout << "Triangulo" << std::endl;
+//    std::cout << "Triangulo" << std::endl;
     //printVector3(*tri);
 
 //    return polyInterpolated;
