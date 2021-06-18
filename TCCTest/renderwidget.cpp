@@ -90,6 +90,7 @@ void RenderWidget::keyPressEvent(QKeyEvent *event)
     {
         gpu = false;
         cpuAndGpu = false;
+        tesselationOnly = false;
         program.removeAllShaders();
         program.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/vertex");
         program.addShaderFromSourceFile(QOpenGLShader::Geometry, ":/Shaders/geometry-cpu");
@@ -101,6 +102,7 @@ void RenderWidget::keyPressEvent(QKeyEvent *event)
     {
         gpu = false;
         cpuAndGpu = true;
+        tesselationOnly = false;
         program.removeAllShaders();
         program.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/vertexshader_tess.glsl");
         program.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/fragment");
@@ -113,6 +115,7 @@ void RenderWidget::keyPressEvent(QKeyEvent *event)
     {
         gpu = true;
         cpuAndGpu = false;
+        tesselationOnly = false;
         program.removeAllShaders();
         //Create the program
         program.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/vertexshader_tess.glsl");
@@ -120,6 +123,21 @@ void RenderWidget::keyPressEvent(QKeyEvent *event)
         program.addShaderFromSourceFile(QOpenGLShader::Geometry, ":/Shaders/geometry");
         program.addShaderFromSourceFile(QOpenGLShader::TessellationEvaluation, ":/Shaders/TEShader.glsl");
         program.addShaderFromSourceFile(QOpenGLShader::TessellationControl, ":/Shaders/TCShader.glsl");
+        program.link();
+    }
+
+    if(event->key() == Qt::Key_4)
+    {
+        gpu = false;
+        cpuAndGpu = false;
+        tesselationOnly = true;
+        program.removeAllShaders();
+        //Create the program
+        program.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/vertexshader_tess.glsl");
+        program.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/fragment");
+        program.addShaderFromSourceFile(QOpenGLShader::Geometry, ":/Shaders/geometry-cpu");
+        program.addShaderFromSourceFile(QOpenGLShader::TessellationEvaluation, ":/Shaders/TEShaderFull.glsl");
+        program.addShaderFromSourceFile(QOpenGLShader::TessellationControl, ":/Shaders/TCShaderFull.glsl");
         program.link();
     }
 
@@ -136,6 +154,10 @@ void RenderWidget::keyPressEvent(QKeyEvent *event)
     else if(cpuAndGpu){
 
         setupCPUAndGPU(polyline);
+    }
+    else if(tesselationOnly){
+
+        setupGPUTesselationOnly(polyline);
     }
     else
     {
@@ -198,6 +220,10 @@ void RenderWidget::ChangePoly(){
     else if(cpuAndGpu){
 
         setupCPUAndGPU(polyline);
+    }
+    else if(tesselationOnly){
+
+        setupGPUTesselationOnly(polyline);
     }
     else
     {
@@ -281,14 +307,16 @@ void RenderWidget::initializeGL()
     //setupCPU(polyline);
     // CPU + GEOMETRY FLOW
     //setupCPUAndGPU(polyline);
-    // CPU + TESSELATION + GEOMETRY FLOW
-    setupGPU(polyline);
+    // TESSELATION + GEOMETRY FLOW
+    //setupGPU(polyline);
+    // Only Tesselation
+    setupGPUTesselationOnly(polyline);
 
     //wireframe
     wireframeON = true;
 
     //animation
-    animation = true;
+    animation = false;
 
     glm::vec3 eye(0,0,100);
     glm::vec3 verticesMedia;
@@ -328,6 +356,15 @@ void RenderWidget::initializeGL()
         program.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/fragment");
         program.addShaderFromSourceFile(QOpenGLShader::Geometry, ":/Shaders/geometry");
         program.link();
+    }
+    else if(tesselationOnly)
+    {
+        //Create the program
+        program.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/vertexshader_tess.glsl");
+        program.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/fragment");
+        program.addShaderFromSourceFile(QOpenGLShader::Geometry, ":/Shaders/geometry-cpu");
+        program.addShaderFromSourceFile(QOpenGLShader::TessellationEvaluation, ":/Shaders/TEShaderFull.glsl");
+        program.addShaderFromSourceFile(QOpenGLShader::TessellationControl, ":/Shaders/TCShaderFull.glsl");
     }
     else
     {
@@ -403,7 +440,7 @@ void RenderWidget::paintGL()
     program.setUniformValue("inv_p", p.inverted());
 
     //Desenhar
-    if(gpu)
+    if(gpu || tesselationOnly)
     {
         glPatchParameteri( GL_PATCH_VERTICES, 4);
         glDrawArrays(GL_PATCHES, 0, vertices.size());
@@ -439,6 +476,10 @@ void RenderWidget::paintGL()
     if(gpu)
     {
         myText.drawText(QPoint(10,30),"Solução 3");
+        myText.drawText(QPoint(10,110), QString("Triangles: ") + QString::number((vertices.size()/4*2*numberOfPointsInCircle)*numberOfTesselations));
+    }
+    else if(tesselationOnly){
+        myText.drawText(QPoint(10,30),"Solução 4");
         myText.drawText(QPoint(10,110), QString("Triangles: ") + QString::number((vertices.size()/4*2*numberOfPointsInCircle)*numberOfTesselations));
     }
     else if(cpuAndGpu)
@@ -530,6 +571,40 @@ void RenderWidget::setupGPU(const std::vector<glm::vec3> &polyline)
 
     //Set gpu mode on
     gpu = true;
+}
+
+void RenderWidget::setupGPUTesselationOnly(const std::vector<glm::vec3> &polyline)
+{
+
+    //Setup the model.
+    //Wrong: vertices should be the bezier control points
+    vertices = polyline;
+    //vertices = polyline;
+    // BÉzier points
+    std::vector<glm::vec3> new_vertices;
+    // Esse algoritimo pega os pontos da Bézier gerados pelo polygon moulder e cola uma bézier na outra
+    for(unsigned int i = 0; i < vertices.size()-3; i = i + 3)
+    {
+        new_vertices.push_back(vertices[i + 0]);
+        new_vertices.push_back(vertices[i + 1]);
+        new_vertices.push_back(vertices[i + 2]);
+        new_vertices.push_back(vertices[i + 3]);
+    }
+
+    vertices = new_vertices;
+
+    //Should be calculated inside the shaders
+    normals = std::vector<glm::vec3>(vertices.size());
+
+    //Not using. Erase.
+    texCoords = std::vector<glm::vec2>(vertices.size());
+    tangentes = std::vector<glm::vec3>(vertices.size());
+
+    //Setup VBO and VAO.
+    updateVBO();
+
+    //Set gpu mode on
+    tesselationOnly = true;
 }
 
 void RenderWidget::setupCPUAndGPU(const std::vector<glm::vec3> &polyline)

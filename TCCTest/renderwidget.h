@@ -26,6 +26,7 @@ private:
     virtual void resizeGL(int w, int h);
 
     bool gpu = false;
+    bool tesselationOnly = false;
     bool cpuAndGpu = false;
     //FPS
     QElapsedTimer frameTime;
@@ -38,6 +39,7 @@ private:
     void setupCPU(const std::vector<glm::vec3> &polyline);
     void setupCPUAndGPU(const std::vector<glm::vec3> &polyline);
     void setupGPU(const std::vector<glm::vec3> &polyline);
+    void setupGPUTesselationOnly(const std::vector<glm::vec3> &polyline);
     void ChangePoly();
 
     //estrutura vbo

@@ -9,5 +9,7 @@
         <file>Shaders/TEShader.glsl</file>
         <file>Shaders/TCShader.glsl</file>
         <file>Shaders/vertexshader_tess.glsl</file>
+        <file>Shaders/TEShaderFull.glsl</file>
+        <file>Shaders/TCShaderFull.glsl</file>
     </qresource>
 </RCC>
