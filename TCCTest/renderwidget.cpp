@@ -437,7 +437,9 @@ void RenderWidget::paintGL()
     program.setUniformValue("mv", mv);
     program.setUniformValue("mv_ti", mv.inverted().transposed());
     program.setUniformValue("mvp", mvp);
+    program.setUniformValue("mvp_inv", mvp.inverted().transposed());
     program.setUniformValue("inv_p", p.inverted());
+    program.setUniformValue("tesselationOnly", tesselationOnly);
 
     //Desenhar
     if(gpu || tesselationOnly)

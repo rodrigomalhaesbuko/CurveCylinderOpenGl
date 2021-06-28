@@ -17,6 +17,7 @@ out vec3 fColor;
 out vec3 wireframeUVW;
 out vec3 gNormal;
 out vec3 gLightDir;
+uniform mat4 mvp;
 
 uniform int numberOfPointsInCircle;
 uniform mat4 inv_p;

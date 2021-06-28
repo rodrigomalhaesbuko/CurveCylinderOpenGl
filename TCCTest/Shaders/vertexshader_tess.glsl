@@ -14,11 +14,17 @@ uniform mat4 mv_ti; //inversa transposta da MV
 //Posição e normal no espaço da câmera:
 //Coordenadas de textura do fragmento
 //out vec2 fragUV;
+uniform bool tesselationOnly;
 
 out vec4 tan;
 
 void main()
 {
-    gl_Position = mvp * vec4(vertexPos, 1 );
-    tan = mv * vec4(tangent, 1 );
+    if(tesselationOnly){
+        gl_Position = vec4(vertexPos, 1 );
+    }else{
+        gl_Position = mvp * vec4(vertexPos, 1 );
+    }
+
+    tan = vec4(tangent, 1 );
 }

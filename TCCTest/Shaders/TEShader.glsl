@@ -4,6 +4,7 @@ layout( isolines, equal_spacing, ccw) in;
 
 out vec3 fColor;
 out vec4 tan;
+uniform mat4 mvp;
 
 void main()
 {

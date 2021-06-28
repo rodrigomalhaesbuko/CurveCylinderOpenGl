@@ -41,7 +41,7 @@ void main()
     vec3 ambient = material.ambient;
 
 
-//    if(numberOfTesselations < 5){
+
 //        vec3 N = normalize(gNormal);
 //        vec3 L = normalize(gLightDir);
 
@@ -62,8 +62,7 @@ void main()
 //        color = (ambient + diffuse + specular)*color;
 
 //        //Uncomment to render the normal color
-////        color = N;
-//    }
+//        color = N;
 
     //Add wireframe combining the final color to the wireframe texture
     vec3 wireframeColor = vec3(1, 1, 1);
